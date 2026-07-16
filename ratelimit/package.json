@@ -1,0 +1,24 @@
+{
+  "name": "w7panel-gateway-plugin-cluster-rate-limit",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build"
+  },
+  "dependencies": {
+    "@arco-design/web-vue": "^2.58.0",
+    "vue": "^3.2.13",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "5.0.4",
+    "@vue/cli-service": "5.0.4"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}
