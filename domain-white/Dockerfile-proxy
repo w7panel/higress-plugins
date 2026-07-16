@@ -1,0 +1,2 @@
+FROM scratch
+COPY ./extensions/w7-domain/plugin.wasm plugin.wasm
