@@ -6,7 +6,9 @@
 
 页面从 `window.$wujie.props` 读取以下字段：
 
-- `pluginConfig`：当前插件配置，结构为 `{ list, errpage }`。
+- `pluginConfig`：当前插件配置，结构为
+  `{ white_domains, response_code, response_content }`；页面仍兼容读取旧的
+  `{ list, errpage }` 结构，保存时统一转换为插件实际使用的字段。
 - `pluginEnabled`：当前启用状态；兼容读取 `enabled`，未提供时默认为 `true`。
 - `configScope`：配置范围，值为 `global` 或 `rule`，仅用于页面提示。
 - `savePluginConfig(config, enabled)`：保存当前配置和启用状态。

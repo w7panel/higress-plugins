@@ -78,6 +78,7 @@ export default {
       tab: 'whitelist',
       list: [],
       errpage: defaultErrorPage(),
+      configBase: {},
       pluginEnabled: true,
       configScope: 'global',
       saving: false,
@@ -101,14 +102,25 @@ export default {
     init() {
       const props = getPluginProps()
       const config = clone(props.pluginConfig)
+      this.configBase = config
       this.configScope = props.configScope === 'rule' ? 'rule' : 'global'
       this.pluginEnabled = props.pluginEnabled ?? props.enabled ?? true
-      this.list = Array.isArray(config.list)
-        ? config.list.map(item => this.normalizeDomain(item))
+      const whiteDomains = Array.isArray(config.white_domains) ? config.white_domains : config.list
+      this.list = Array.isArray(whiteDomains)
+        ? whiteDomains.map(item => this.normalizeDomain(item))
         : []
+      const legacyErrorPage = config.errpage && typeof config.errpage === 'object'
+        ? config.errpage
+        : {}
       this.errpage = {
         ...defaultErrorPage(),
-        ...(config.errpage && typeof config.errpage === 'object' ? config.errpage : {}),
+        ...legacyErrorPage,
+        ...(config.response_code !== undefined && config.response_code !== null
+          ? { code: String(config.response_code) }
+          : {}),
+        ...(typeof config.response_content === 'string'
+          ? { content: config.response_content }
+          : {}),
       }
     },
     normalizeDomain(item = {}) {
@@ -138,11 +150,15 @@ export default {
       }
 
       const config = {
-        list: this.list
+        ...clone(this.configBase),
+        response_code: String(this.errpage.code),
+        response_content: this.errpage.content,
+        white_domains: this.list
           .map(({ domain, enable }) => ({ domain: domain.trim(), enable }))
           .filter(item => item.domain),
-        errpage: clone(this.errpage),
       }
+      delete config.list
+      delete config.errpage
 
       this.saving = true
       try {
