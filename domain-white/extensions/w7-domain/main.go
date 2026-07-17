@@ -17,6 +17,10 @@ func main() {
 }
 
 func onHttpRequestHeaders(ctx wrapper.HttpContext, config W7DomainSetting, log wrapper.Log) types.Action {
+	if len(config.setting.whiteDomainSetting) == 0 {
+		return types.ActionContinue
+	}
+
 	reqDomain := ctx.Host()
 	for domain, _ := range config.setting.whiteDomainSetting {
 		domain = strings.TrimLeft(domain, "*")
