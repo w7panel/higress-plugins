@@ -1,15 +1,5 @@
 <template>
   <main class="plugin-page">
-    <header class="page-header">
-      <div>
-        <h1>域名插件配置</h1>
-        <p>{{ scopeDescription }}</p>
-      </div>
-      <div class="header-actions">
-        <a-button type="primary" :loading="saving" @click="submit">保存配置</a-button>
-      </div>
-    </header>
-
     <a-tabs v-model:active-key="tab" class="config-tabs">
       <a-tab-pane key="whitelist" title="白名单配置">
         <a-table
@@ -50,6 +40,10 @@
         </a-form>
       </a-tab-pane>
     </a-tabs>
+
+    <div class="page-actions">
+      <a-button type="primary" :loading="saving" @click="submit">保存配置</a-button>
+    </div>
   </main>
 </template>
 
@@ -89,11 +83,6 @@ export default {
         { title: '操作', slotName: 'operation', width: 100 },
       ],
     }
-  },
-  computed: {
-    scopeDescription() {
-      return this.configScope === 'rule' ? '当前配置作用于所选网关规则' : '当前配置为全局插件配置'
-    },
   },
   created() {
     this.init()
@@ -198,35 +187,10 @@ body {
   background: #fff;
 }
 
-.page-header {
+.page-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #e5e6eb;
-}
-
-.page-header h1 {
-  margin: 0;
-  font-size: 20px;
-  line-height: 28px;
-}
-
-.page-header p {
-  margin: 6px 0 0;
-  color: #86909c;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.config-tabs {
-  margin-top: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
 }
 
 .config-table .arco-table-th {
@@ -247,16 +211,6 @@ body {
 @media (max-width: 720px) {
   .plugin-page {
     padding: 16px;
-  }
-
-  .page-header {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .header-actions {
-    width: 100%;
-    flex-wrap: wrap;
   }
 }
 </style>

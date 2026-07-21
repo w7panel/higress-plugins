@@ -121,7 +121,7 @@ export default {
 
 <style scoped>
 .settings-page {
-  max-width: 760px;
+  width: 100%;
   padding-top: 20px;
 }
 
@@ -143,7 +143,7 @@ export default {
 }
 
 .settings-form {
-  max-width: 680px;
+  width: 100%;
 }
 
 .form-grid {
