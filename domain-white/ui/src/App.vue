@@ -183,7 +183,6 @@ body {
 
 .plugin-page {
   min-height: 100%;
-  padding: 24px;
   background: #fff;
 }
 
@@ -206,11 +205,5 @@ body {
 .error-form {
   max-width: 720px;
   padding-top: 12px;
-}
-
-@media (max-width: 720px) {
-  .plugin-page {
-    padding: 16px;
-  }
 }
 </style>
