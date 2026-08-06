@@ -1,6 +1,10 @@
 <template>
   <section class="rate-page">
-    <a-form ref="formRef" :model="form" auto-label-width class="rate-form">
+    <a-alert v-if="!redisConfigured" type="warning" class="redis-alert">
+      当前未配置 Redis，暂不能配置限流规则。请联系管理员在全局配置中配置 Redis 后，再进行规则配置。
+    </a-alert>
+    <div :class="{ 'config-disabled': !redisConfigured }">
+      <a-form ref="formRef" :model="form" auto-label-width class="rate-form">
       <a-form-item label="限流调试">
         <a-switch v-model="form.show_limit_quota_header" />
         <template #extra>开启后将在响应头中返回限流剩余额度，便于联调和排查。</template>
@@ -65,7 +69,9 @@
                     :disabled="isDynamicValueLocked(item)"
                     @change="handleDynamicValueChange(item)"
                   >
-                    动态值
+                    <div style="width: 50px">
+                      动态值
+                    </div>
                   </a-checkbox>
                 </div>
               </a-form-item>
@@ -149,8 +155,10 @@
                     </tr>
                     <tr>
                       <td colspan="4" class="add-row" @click="addLimitKey(item)">
-                        <icon-plus :size="14" />
-                        <span>新增子规则</span>
+                        <div class="add-row-content">
+                          <icon-plus :size="14" />
+                          <span>新增子规则</span>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -160,10 +168,11 @@
           </div>
         </a-form-item>
       </div>
-    </a-form>
+      </a-form>
+    </div>
 
     <div class="page-actions">
-      <a-button type="primary" :loading="saving" @click="submit">保存配置</a-button>
+      <a-button type="primary" :loading="saving" :disabled="!redisConfigured" @click="submit">保存配置</a-button>
     </div>
   </section>
 </template>
@@ -211,6 +220,11 @@ export default {
       ipSourceOptions,
       limitTypeOptions,
     }
+  },
+  computed: {
+    redisConfigured() {
+      return Boolean(String(pluginState.config?.redis?.service_name || '').trim())
+    },
   },
   created() {
     this.dataToForm(clone(pluginState.config))
@@ -316,6 +330,10 @@ export default {
       return item.dynamicValue ? option.dynamicType : option.fixedType
     },
     validate() {
+      if (!this.redisConfigured) {
+        this.$message.warning('请联系管理员在全局配置中配置 Redis 后，再进行规则配置')
+        return false
+      }
       if (this.form.mode === 'global_threshold') {
         if (!this.form.global_threshold.period || !Number(this.form.global_threshold.value)) {
           this.$message.error('请补全全局限流阈值')
@@ -431,7 +449,16 @@ export default {
 .rate-page {
   width: 100%;
   max-width: 1080px;
-  padding-top: 20px;
+}
+
+.redis-alert {
+  margin-bottom: 16px;
+}
+
+.config-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
 }
 
 .rate-form,
@@ -450,7 +477,7 @@ export default {
 .inline-controls,
 .limit-type-row,
 .key-editor,
-.add-row {
+.add-row-content {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -491,7 +518,6 @@ export default {
 
 .config-table {
   width: 100%;
-  min-width: 880px;
   border-collapse: collapse;
   background: #fff;
 }
@@ -531,9 +557,12 @@ export default {
 }
 
 .add-row {
-  justify-content: center;
   color: #86909c;
   cursor: pointer;
+}
+
+.add-row-content {
+  justify-content: center;
 }
 
 .add-row:hover {
@@ -548,7 +577,7 @@ export default {
 .page-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 @media (max-width: 760px) {

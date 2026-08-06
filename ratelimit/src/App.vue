@@ -34,13 +34,6 @@ body {
 
 .plugin-page {
   min-height: 100%;
-  padding: 24px;
   background: #fff;
-}
-
-@media (max-width: 760px) {
-  .plugin-page {
-    padding: 16px;
-  }
 }
 </style>
