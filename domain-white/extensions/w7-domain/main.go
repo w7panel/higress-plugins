@@ -22,11 +22,8 @@ func onHttpRequestHeaders(ctx wrapper.HttpContext, config W7DomainSetting, log w
 	}
 
 	reqDomain := ctx.Host()
-	for domain, _ := range config.setting.whiteDomainSetting {
-		domain = strings.TrimLeft(domain, "*")
-		if strings.HasSuffix(reqDomain, domain) {
-			return types.ActionContinue
-		}
+	if isWhiteDomainEnabled(reqDomain, config.setting.whiteDomainSetting) {
+		return types.ActionContinue
 	}
 
 	err := proxywasm.SendHttpResponse(uint32(config.setting.responseCode), nil, []byte(config.setting.responseBody), -1)
@@ -36,4 +33,18 @@ func onHttpRequestHeaders(ctx wrapper.HttpContext, config W7DomainSetting, log w
 	}
 
 	return types.ActionPause
+}
+
+func isWhiteDomainEnabled(reqDomain string, domains map[string]domainSetting) bool {
+	for domain, setting := range domains {
+		if !setting.Enable {
+			continue
+		}
+		domain = strings.TrimLeft(domain, "*")
+		if strings.HasSuffix(reqDomain, domain) {
+			return true
+		}
+	}
+
+	return false
 }
