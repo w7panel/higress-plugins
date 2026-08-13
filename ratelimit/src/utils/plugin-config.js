@@ -20,6 +20,10 @@ export function getPluginProps() {
   return window.$wujie?.props || {}
 }
 
+function getGlobalRedisConfig(globalConfig = {}) {
+  return clone(globalConfig.redis)
+}
+
 function createRuleName(length = 10) {
   const chars = 'abcdefghijklmnopqrstuvwxyz'
   let suffix = ''
@@ -53,7 +57,15 @@ function normalizePluginConfig(value) {
 
 export function loadPluginState() {
   const props = getPluginProps()
-  pluginState.config = normalizePluginConfig(props.pluginConfig)
+  const pluginConfig = normalizePluginConfig(props.pluginConfig)
+  const globalRedis = getGlobalRedisConfig(props.globalPluginConfig)
+  pluginState.config = normalizePluginConfig({
+    ...pluginConfig,
+    redis: {
+      ...pluginConfig.redis,
+      ...globalRedis,
+    },
+  })
   pluginState.enabled = props.pluginEnabled ?? props.pluginConfigEnabled ?? props.enabled ?? true
   pluginState.configScope = props.configScope === 'rule' ? 'rule' : 'global'
   pluginState.pluginId = typeof props.pluginId === 'string' ? props.pluginId : ''
