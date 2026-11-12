@@ -11,6 +11,20 @@
             <a-link v-if="scope === 'rule' && Object.hasOwn(overrides, record.id)" @click="clearCategory(record.id)">恢复全局</a-link>
           </template>
         </a-table>
+        <h3 class="section-title">单条 CRS 规则</h3>
+        <p class="rule-hint">类别关闭时，该类别内的单条设置不生效。“CRS 内部控制规则”会影响防护等级或规则执行流程。</p>
+        <a-space>
+          <a-select v-model="systemCategory" allow-clear placeholder="筛选类别" style="width: 220px">
+            <a-option v-for="item in categories" :key="item.id" :value="item.id">{{ item.title }}</a-option>
+          </a-select>
+          <a-input v-model="systemQuery" allow-clear placeholder="搜索规则 ID 或说明" style="width: 260px" />
+        </a-space>
+        <a-table :columns="systemRuleColumns" :data="filteredSystemRules" :pagination="{ pageSize: 20 }" row-key="id">
+          <template #systemEnabled="{ record }">
+            <a-switch :model-value="systemRuleEnabled(record)" :disabled="!categoryEnabled(record.category)" @change="value => setSystemRule(record.id, value)" />
+            <a-link v-if="scope === 'rule' && Object.hasOwn(systemOverrides, record.id)" @click="clearSystemRule(record.id)">恢复全局</a-link>
+          </template>
+        </a-table>
       </a-tab-pane>
       <a-tab-pane key="custom" title="自定义规则">
         <a-table :columns="customColumns" :data="visibleRules" :pagination="false" row-key="key">
@@ -33,14 +47,27 @@
                 <a-option value="method">请求方法</a-option>
                 <a-option value="ip">客户端 IP/CIDR</a-option>
                 <a-option value="header">请求头包含</a-option>
+                <a-option value="advanced">通用 SecRule</a-option>
               </a-select>
-              <a-input v-if="visualForm.type === 'header'" v-model="visualForm.header" placeholder="请求头名称，例如 User-Agent" />
+              <template v-if="visualForm.type === 'advanced'">
+                <a-input v-model="visualForm.variable" placeholder="匹配变量，例如 ARGS、REQUEST_COOKIES、RESPONSE_BODY" />
+                <a-input v-model="visualForm.operator" placeholder="操作符，例如 @rx (?i)attack" />
+                <a-input v-model="visualForm.actions" placeholder="动作，例如 phase:2,deny,status:403,log" />
+                <div v-for="(condition, index) in visualForm.extraConditions" :key="index" class="chained-condition">
+                  <a-input v-model="condition.variable" :placeholder="`条件 ${index + 2} 的变量，例如 ARGS`" />
+                  <a-input v-model="condition.operator" placeholder="操作符，例如 @contains attack" />
+                  <a-input v-model="condition.actions" placeholder="动作，例如 t:none；可留空" />
+                  <a-button @click="visualForm.extraConditions.splice(index, 1)">移除条件</a-button>
+                </div>
+                <a-button @click="addCondition">添加 AND 条件</a-button>
+              </template>
+              <a-input v-else-if="visualForm.type === 'header'" v-model="visualForm.header" placeholder="请求头名称，例如 User-Agent" />
               <a-select v-if="visualForm.type === 'method'" v-model="visualForm.value" placeholder="请求方法">
                 <a-option v-for="method in methods" :key="method" :value="method">{{ method }}</a-option>
               </a-select>
-              <a-input v-else v-model="visualForm.value" :placeholder="visualForm.type === 'ip' ? '例如 192.0.2.0/24' : '匹配值'" />
+              <a-input v-else-if="visualForm.type !== 'advanced'" v-model="visualForm.value" :placeholder="visualForm.type === 'ip' ? '例如 192.0.2.0/24' : '匹配值'" />
             </div>
-            <p class="rule-hint">命中时拦截请求并返回 403；复杂规则可在“手填 SecRule”中编写。</p>
+            <p class="rule-hint">快捷条件命中后返回 403。通用 SecRule 可填写 Coraza 支持的变量、操作符和动作；多个条件按 AND 链接，保存时由服务端编译校验。</p>
           </a-tab-pane>
           <a-tab-pane key="manual" title="手填 SecRule">
             <a-textarea v-model="newRule" placeholder='SecRule REQUEST_URI "@streq /admin" "id:1000001,phase:1,deny"' :auto-size="{ minRows: 3, maxRows: 8 }" />
@@ -63,6 +90,7 @@
 
 <script>
 import { buildVisualRule, categories, parseRuleId, parseVisualRule, validateCustomRules } from './rules.mjs'
+import systemRules from './system-rules.json'
 
 const clone = value => JSON.parse(JSON.stringify(value || {}))
 const props = () => window.$wujie?.props || {}
@@ -70,17 +98,23 @@ const props = () => window.$wujie?.props || {}
 export default {
   data() {
     return {
-      categories, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+      categories, systemRules, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
       tab: 'system', editorMode: 'visual', scope: 'global', domain: '',
-      globalCategories: {}, overrides: {}, globalRules: [], legacyRules: [], customRules: [], disabledGlobalIds: [],
-      visualForm: { id: 1000000, type: 'pathExact', value: '', header: '' },
+      globalCategories: {}, overrides: {}, globalSystemRules: {}, systemOverrides: {}, systemCategory: '', systemQuery: '', globalRules: [], legacyRules: [], customRules: [], disabledGlobalIds: [],
+      visualForm: { id: 1000000, type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] },
       editingKey: '', newRule: '', saving: false, loadingLogs: false, logs: [],
       systemColumns: [{ title: 'OWASP CRS 类别', dataIndex: 'title' }, { title: '开启', slotName: 'enabled', width: 180 }],
+      systemRuleColumns: [{ title: '规则 ID', dataIndex: 'id', width: 120 }, { title: '说明', dataIndex: 'title' }, { title: '开启', slotName: 'systemEnabled', width: 180 }],
       customColumns: [{ title: '规则 ID', dataIndex: 'id', width: 130 }, { title: 'SecRule', slotName: 'rule' }, { title: '操作', slotName: 'operation', width: 140 }],
       logColumns: [{ title: '时间', dataIndex: 'time' }, { title: '域名', dataIndex: 'domain' }, { title: '路径', dataIndex: 'path' }, { title: '规则 ID', dataIndex: 'ruleId' }, { title: '动作', dataIndex: 'action' }, { title: '来源 IP', dataIndex: 'clientIp' }],
     }
   },
   computed: {
+    filteredSystemRules() {
+      const query = this.systemQuery.trim().toLowerCase()
+      return this.systemRules.filter(rule => (!this.systemCategory || rule.category === this.systemCategory)
+        && (!query || String(rule.id).includes(query) || rule.title.toLowerCase().includes(query)))
+    },
     visibleRules() {
       return [
         ...this.legacyRules.map((rule, index) => ({ id: parseRuleId(rule), rule, global: this.scope === 'rule', legacy: true, key: `legacy-${index}` })),
@@ -100,9 +134,11 @@ export default {
       try {
         const data = await context.loadWafConfig()
         this.globalCategories = clone(data.global?.categories)
+        this.globalSystemRules = clone(data.global?.systemRules)
         this.globalRules = Array.isArray(data.global?.customRules) ? clone(data.global.customRules) : []
         this.legacyRules = Array.isArray(data.global?.legacyRules) ? clone(data.global.legacyRules) : []
         this.overrides = clone(data.overrides?.categories)
+        this.systemOverrides = clone(data.overrides?.systemRules)
         const currentRules = this.scope === 'rule' ? data.overrides?.customRules : data.global?.customRules
         this.customRules = Array.isArray(currentRules) ? clone(currentRules) : []
         this.disabledGlobalIds = [...(data.overrides?.disabledGlobalIds || [])]
@@ -118,6 +154,20 @@ export default {
       else this.globalCategories[id] = value
     },
     clearCategory(id) { delete this.overrides[id] },
+    systemRuleEnabled(rule) {
+      if (!this.categoryEnabled(rule.category)) return false
+      if (this.scope === 'rule' && Object.hasOwn(this.systemOverrides, rule.id)) return this.systemOverrides[rule.id]
+      return this.globalSystemRules[rule.id] !== false
+    },
+    setSystemRule(id, value) {
+      if (this.scope === 'rule') this.systemOverrides[id] = value
+      else this.globalSystemRules[id] = value
+    },
+    clearSystemRule(id) { delete this.systemOverrides[id] },
+    addCondition() {
+      if (!this.visualForm.extraConditions) this.visualForm.extraConditions = []
+      this.visualForm.extraConditions.push({ variable: '', operator: '', actions: '' })
+    },
     nextRuleId() {
       const ids = [...this.globalRules, ...this.customRules].map(item => item.id)
       ids.push(...this.legacyRules.map(parseRuleId))
@@ -126,7 +176,7 @@ export default {
     resetEditor() {
       this.editingKey = ''
       this.newRule = ''
-      this.visualForm = { id: this.nextRuleId(), type: 'pathExact', value: '', header: '' }
+      this.visualForm = { id: this.nextRuleId(), type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] }
     },
     editRule(record) {
       this.editingKey = record.key
@@ -171,8 +221,8 @@ export default {
       this.saving = true
       try {
         await props().saveWafConfig(this.scope === 'rule'
-          ? { categories: this.overrides, customRules: this.customRules, disabledGlobalIds: this.disabledGlobalIds }
-          : { categories: this.globalCategories, customRules: this.customRules, legacyRules: this.legacyRules })
+          ? { categories: this.overrides, systemRules: this.systemOverrides, customRules: this.customRules, disabledGlobalIds: this.disabledGlobalIds }
+          : { categories: this.globalCategories, systemRules: this.globalSystemRules, customRules: this.customRules, legacyRules: this.legacyRules })
         this.$message.success('保存成功')
         await this.load()
       } catch (e) { this.$message.error(e?.message || '保存失败') }
@@ -197,8 +247,10 @@ body { margin: 0; color: #1d2129; font-family: -apple-system, BlinkMacSystemFont
 .section-title { margin: 22px 0 10px; font-weight: 600; }
 .rule-input, .log-table { margin: 16px 0; }
 .visual-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
+.chained-condition { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 12px; border: 1px solid #e5e6eb; border-radius: 4px; }
 .rule-hint { color: #86909c; font-size: 12px; }
 .actions { display: flex; justify-content: flex-end; margin-top: 20px; }
 code { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 640px) { .visual-form { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .chained-condition { grid-template-columns: 1fr; } }
 </style>

@@ -17,4 +17,8 @@
 
 类别关闭时向 Higress WAF 的 `secRules` 追加 `SecRuleRemoveById` 指令。CRS 初始化和阻断评估规则始终保留。自定义规则使用独立 ID（从 1000000 开始），避免与 CRS 及已有规则冲突。
 
+“系统规则”页列出上述类别的 371 个 CRS 3.3.2 规则 ID，支持按单条规则禁用。类别关闭优先，类别内的单条开关此时不生效；域名设置可覆盖全局单条设置。清单来自 CRS 3.3.2 对应的 `REQUEST-*`、`RESPONSE-*` 规则文件；标为“CRS 内部控制规则”的条目参与防护等级和规则执行流程，调整时需了解其作用。
+
+“自定义规则”页的快捷条件生成固定的 403 拦截规则；“通用 SecRule”可填写 Coraza 匹配变量、操作符、动作，并通过添加 AND 条件生成链式规则。手填入口保留，服务端仅允许 SecRule 指令、单条配置最多 8192 字节、总数最多 100 条，保存时由 Coraza 编译校验。
+
 参考：[Higress WAF 配置](https://github.com/alibaba/higress/blob/main/plugins/wasm-go/extensions/waf/README.md)、[OWASP CRS 3.3.2](https://github.com/coreruleset/coreruleset/tree/v3.3.2)、[雷池帮助文档](https://help.waf-ce.chaitin.cn/node/01973fc6-e12f-789f-a8ff-e81d383c80bc)。
