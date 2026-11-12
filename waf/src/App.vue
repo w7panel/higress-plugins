@@ -5,9 +5,15 @@
     </a-alert>
     <a-tabs v-model:active-key="tab">
       <a-tab-pane key="system" title="系统规则">
+        <div class="crs-config">
+          <a-switch :model-value="effectiveUseCRS" @change="setUseCRS" />
+          <span>启用 OWASP CRS 系统规则</span>
+          <a-link v-if="scope === 'rule' && useCRSOverride !== null" @click="useCRSOverride = null">恢复全局</a-link>
+        </div>
+        <p class="rule-hint">关闭后不加载整套 CRS，下面的类别和单条系统规则暂不生效；自定义 SecRule 仍然生效。开启 CRS 会增加网关内存占用。</p>
         <a-table :columns="systemColumns" :data="categories" :pagination="false" row-key="id">
           <template #enabled="{ record }">
-            <a-switch :model-value="categoryEnabled(record.id)" @change="value => setCategory(record.id, value)" />
+            <a-switch :model-value="categoryEnabled(record.id)" :disabled="!effectiveUseCRS" @change="value => setCategory(record.id, value)" />
             <a-link v-if="scope === 'rule' && Object.hasOwn(overrides, record.id)" @click="clearCategory(record.id)">恢复全局</a-link>
           </template>
         </a-table>
@@ -21,7 +27,7 @@
         </a-space>
         <a-table :columns="systemRuleColumns" :data="filteredSystemRules" :pagination="{ pageSize: 20 }" row-key="id">
           <template #systemEnabled="{ record }">
-            <a-switch :model-value="systemRuleEnabled(record)" :disabled="!categoryEnabled(record.category)" @change="value => setSystemRule(record.id, value)" />
+            <a-switch :model-value="systemRuleEnabled(record)" :disabled="!effectiveUseCRS || !categoryEnabled(record.category)" @change="value => setSystemRule(record.id, value)" />
             <a-link v-if="scope === 'rule' && Object.hasOwn(systemOverrides, record.id)" @click="clearSystemRule(record.id)">恢复全局</a-link>
           </template>
         </a-table>
@@ -100,7 +106,7 @@ export default {
     return {
       categories, systemRules, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
       tab: 'system', editorMode: 'visual', scope: 'global', domain: '',
-      globalCategories: {}, overrides: {}, globalSystemRules: {}, systemOverrides: {}, systemCategory: '', systemQuery: '', globalRules: [], legacyRules: [], customRules: [], disabledGlobalIds: [],
+      globalUseCRS: true, useCRSOverride: null, globalCategories: {}, overrides: {}, globalSystemRules: {}, systemOverrides: {}, systemCategory: '', systemQuery: '', globalRules: [], legacyRules: [], customRules: [], disabledGlobalIds: [],
       visualForm: { id: 1000000, type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] },
       editingKey: '', newRule: '', saving: false, loadingLogs: false, logs: [],
       systemColumns: [{ title: 'OWASP CRS 类别', dataIndex: 'title' }, { title: '开启', slotName: 'enabled', width: 180 }],
@@ -110,6 +116,7 @@ export default {
     }
   },
   computed: {
+    effectiveUseCRS() { return this.scope === 'rule' && this.useCRSOverride !== null ? this.useCRSOverride : this.globalUseCRS },
     filteredSystemRules() {
       const query = this.systemQuery.trim().toLowerCase()
       return this.systemRules.filter(rule => (!this.systemCategory || rule.category === this.systemCategory)
@@ -126,6 +133,10 @@ export default {
   created() { this.load() },
   watch: { tab(value) { if (value === 'logs') this.loadLogs() } },
   methods: {
+    setUseCRS(value) {
+      if (this.scope === 'rule') this.useCRSOverride = value
+      else this.globalUseCRS = value
+    },
     async load() {
       const context = props()
       this.scope = context.configScope === 'rule' ? 'rule' : 'global'
@@ -133,6 +144,8 @@ export default {
       if (typeof context.loadWafConfig !== 'function') return this.$message.error('当前面板未提供 WAF 配置接口')
       try {
         const data = await context.loadWafConfig()
+        this.globalUseCRS = data.global?.useCRS !== false
+        this.useCRSOverride = typeof data.overrides?.useCRS === 'boolean' ? data.overrides.useCRS : null
         this.globalCategories = clone(data.global?.categories)
         this.globalSystemRules = clone(data.global?.systemRules)
         this.globalRules = Array.isArray(data.global?.customRules) ? clone(data.global.customRules) : []
@@ -221,8 +234,8 @@ export default {
       this.saving = true
       try {
         await props().saveWafConfig(this.scope === 'rule'
-          ? { categories: this.overrides, systemRules: this.systemOverrides, customRules: this.customRules, disabledGlobalIds: this.disabledGlobalIds }
-          : { categories: this.globalCategories, systemRules: this.globalSystemRules, customRules: this.customRules, legacyRules: this.legacyRules })
+          ? { useCRS: this.useCRSOverride, categories: this.overrides, systemRules: this.systemOverrides, customRules: this.customRules, disabledGlobalIds: this.disabledGlobalIds }
+          : { useCRS: this.globalUseCRS, categories: this.globalCategories, systemRules: this.globalSystemRules, customRules: this.customRules, legacyRules: this.legacyRules })
         this.$message.success('保存成功')
         await this.load()
       } catch (e) { this.$message.error(e?.message || '保存失败') }
@@ -244,6 +257,7 @@ export default {
 body { margin: 0; color: #1d2129; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .waf-page { padding: 20px; background: #fff; }
 .scope-note { margin-bottom: 16px; }
+.crs-config { display: flex; align-items: center; gap: 10px; margin: 4px 0 8px; }
 .section-title { margin: 22px 0 10px; font-weight: 600; }
 .rule-input, .log-table { margin: 16px 0; }
 .visual-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }

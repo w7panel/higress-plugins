@@ -2,8 +2,32 @@
 
 基于现有 Higress WAF (`useCRS`、`secRules`) 的独立 MicroApp。系统规则按 OWASP CRS 3.3.2 类别开关，自定义规则使用 ModSecurity `SecRule` 语法。
 
+“启用 OWASP CRS 系统规则”对应 `useCRS`：开启时加载整套 CRS，关闭时不加载 CRS，但仍执行自定义 `SecRule`。全局开关是域名规则的默认值；域名可覆盖，也可恢复继承。关闭 CRS 会让类别和单条系统规则设置暂不生效，可降低网关内存占用。
+
 宿主通过 `window.$wujie.props` 提供 `configScope`、`domain`、`loadWafConfig()`、`saveWafConfig(config)` 和 `loadWafLogs()`。配置的校验、继承与编译由 w7panel-server 完成，前端不直接修改 WasmPlugin。
 
 运行 `make ui` 构建并生成 `dist/frontend.zip`。域名入口显示当前域名的日志；日志来自网关 Pod，受 Pod 日志保留时间限制。
 
 设置环境变量 `VERSION=1.0.0` 和 `ZPK_IDC_PASSWORD` 后，运行 `make full` 将前端包发布到 ZPK 制品 `w7panel-pluginwaf`。本项目不打包 Helm Chart，也不升级集群中的 Helm release。
+
+## 系统规则 ID 与来源
+
+本目录的“协议与请求格式”类别使用 `920000-922999` 作为关闭范围。前端映射见 `src/rules.mjs`，服务端映射见 `w7panel-server/common/service/waf/config.go`。关闭类别时生成的 `SecRuleRemoveById 920000-922999` 会停用该范围内已加载的 CRS 规则；这些 ID 属于系统规则，不是用户自定义规则。
+
+以下清单以 [OWASP CRS 3.3.2 的 920 规则文件](https://github.com/coreruleset/coreruleset/blob/v3.3.2/rules/REQUEST-920-PROTOCOL-ENFORCEMENT.conf)和[921 规则文件](https://github.com/coreruleset/coreruleset/blob/v3.3.2/rules/REQUEST-921-PROTOCOL-ATTACK.conf)中的 `id:` 为准。完整文件列表见 [CRS 3.3.2 rules 目录](https://github.com/coreruleset/coreruleset/tree/v3.3.2/rules)；该版本没有 `REQUEST-922` 文件或 922xxx 规则。
+
+| 作用 | 实际存在的规则 ID |
+| --- | --- |
+| 请求行与 multipart 格式 | 920100、920120、920121 |
+| 请求体长度与传输方式 | 920160、920170、920171、920180、920181 |
+| Range 与 Connection 头 | 920190、920200、920201、920202、920210 |
+| 编码与非法字符 | 920220、920230、920240、920250、920260、920270、920271、920272、920273、920274、920275、920460 |
+| Host、Accept、User-Agent、Content-Type 等请求头 | 920280、920290、920300、920310、920311、920320、920330、920340、920341、920350、920470、920480、920490、920510 |
+| 参数与上传大小限制 | 920360、920370、920380、920390、920400、920410 |
+| 内容类型、协议版本、扩展名、受限头及备份文件 | 920420、920430、920440、920450、920500 |
+| 请求走私 | 921110 |
+| 响应拆分、请求头注入与 CR/LF 注入 | 921120、921130、921140、921150、921151、921160、921190 |
+| 重复参数检测 | 921170、921180（前者计数，后者检测） |
+| LDAP 注入 | 921200 |
+
+`920011`～`920018` 和 `921011`～`921018` 也是文件中的规则 ID，用于按 CRS 防护等级跳过规则段，不是攻击检测签名。实际执行哪些检测规则还取决于所配置的 CRS 防护等级。
