@@ -5,3 +5,5 @@
 宿主通过 `window.$wujie.props` 提供 `configScope`、`domain`、`loadWafConfig()`、`saveWafConfig(config)` 和 `loadWafLogs()`。配置的校验、继承与编译由 w7panel-server 完成，前端不直接修改 WasmPlugin。
 
 运行 `make ui` 构建并生成 `dist/frontend.zip`。域名入口显示当前域名的日志；日志来自网关 Pod，受 Pod 日志保留时间限制。
+
+设置环境变量 `VERSION=1.0.0` 和 `ZPK_IDC_PASSWORD` 后，运行 `make full` 将前端包发布到 ZPK 制品 `w7panel-pluginwaf`。本项目不打包 Helm Chart，也不升级集群中的 Helm release。
