@@ -10,25 +10,11 @@
           <span>启用 OWASP CRS 系统规则</span>
           <a-link v-if="scope === 'rule' && useCRSOverride !== null" @click="useCRSOverride = null">恢复全局</a-link>
         </div>
-        <p class="rule-hint">关闭后不加载整套 CRS，下面的类别和单条系统规则暂不生效；自定义 SecRule 仍然生效。开启 CRS 会增加网关内存占用。</p>
+        <p class="rule-hint">关闭后不加载整套 CRS，下面的类别设置暂不生效；自定义 SecRule 仍然生效。开启 CRS 会增加网关内存占用。</p>
         <a-table :columns="systemColumns" :data="categories" :pagination="false" row-key="id">
           <template #enabled="{ record }">
             <a-switch :model-value="categoryEnabled(record.id)" :disabled="!effectiveUseCRS" @change="value => setCategory(record.id, value)" />
             <a-link v-if="scope === 'rule' && Object.hasOwn(overrides, record.id)" @click="clearCategory(record.id)">恢复全局</a-link>
-          </template>
-        </a-table>
-        <h3 class="section-title">单条 CRS 规则</h3>
-        <p class="rule-hint">类别关闭时，该类别内的单条设置不生效。“CRS 内部控制规则”会影响防护等级或规则执行流程。</p>
-        <a-space>
-          <a-select v-model="systemCategory" allow-clear placeholder="筛选类别" style="width: 220px">
-            <a-option v-for="item in categories" :key="item.id" :value="item.id">{{ item.title }}</a-option>
-          </a-select>
-          <a-input v-model="systemQuery" allow-clear placeholder="搜索规则 ID 或说明" style="width: 260px" />
-        </a-space>
-        <a-table :columns="systemRuleColumns" :data="filteredSystemRules" :pagination="{ pageSize: 20 }" row-key="id">
-          <template #systemEnabled="{ record }">
-            <a-switch :model-value="systemRuleEnabled(record)" :disabled="!effectiveUseCRS || !categoryEnabled(record.category)" @change="value => setSystemRule(record.id, value)" />
-            <a-link v-if="scope === 'rule' && Object.hasOwn(systemOverrides, record.id)" @click="clearSystemRule(record.id)">恢复全局</a-link>
           </template>
         </a-table>
       </a-tab-pane>
@@ -96,7 +82,6 @@
 
 <script>
 import { buildVisualRule, categories, parseRuleId, parseVisualRule, validateCustomRules } from './rules.mjs'
-import systemRules from './system-rules.json'
 
 const clone = value => JSON.parse(JSON.stringify(value || {}))
 const props = () => window.$wujie?.props || {}
@@ -104,24 +89,18 @@ const props = () => window.$wujie?.props || {}
 export default {
   data() {
     return {
-      categories, systemRules, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+      categories, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
       tab: 'system', editorMode: 'visual', scope: 'global', domain: '',
-      globalUseCRS: true, useCRSOverride: null, globalCategories: {}, overrides: {}, globalSystemRules: {}, systemOverrides: {}, systemCategory: '', systemQuery: '', globalRules: [], legacyRules: [], customRules: [], disabledGlobalIds: [],
+      globalUseCRS: true, useCRSOverride: null, globalCategories: {}, overrides: {}, globalRules: [], legacyRules: [], customRules: [], disabledGlobalIds: [],
       visualForm: { id: 1000000, type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] },
       editingKey: '', newRule: '', saving: false, loadingLogs: false, logs: [],
       systemColumns: [{ title: 'OWASP CRS 类别', dataIndex: 'title' }, { title: '开启', slotName: 'enabled', width: 180 }],
-      systemRuleColumns: [{ title: '规则 ID', dataIndex: 'id', width: 120 }, { title: '说明', dataIndex: 'title' }, { title: '开启', slotName: 'systemEnabled', width: 180 }],
       customColumns: [{ title: '规则 ID', dataIndex: 'id', width: 130 }, { title: 'SecRule', slotName: 'rule' }, { title: '操作', slotName: 'operation', width: 140 }],
       logColumns: [{ title: '时间', dataIndex: 'time' }, { title: '域名', dataIndex: 'domain' }, { title: '路径', dataIndex: 'path' }, { title: '规则 ID', dataIndex: 'ruleId' }, { title: '动作', dataIndex: 'action' }, { title: '来源 IP', dataIndex: 'clientIp' }],
     }
   },
   computed: {
     effectiveUseCRS() { return this.scope === 'rule' && this.useCRSOverride !== null ? this.useCRSOverride : this.globalUseCRS },
-    filteredSystemRules() {
-      const query = this.systemQuery.trim().toLowerCase()
-      return this.systemRules.filter(rule => (!this.systemCategory || rule.category === this.systemCategory)
-        && (!query || String(rule.id).includes(query) || rule.title.toLowerCase().includes(query)))
-    },
     visibleRules() {
       return [
         ...this.legacyRules.map((rule, index) => ({ id: parseRuleId(rule), rule, global: this.scope === 'rule', legacy: true, key: `legacy-${index}` })),
@@ -147,11 +126,9 @@ export default {
         this.globalUseCRS = data.global?.useCRS !== false
         this.useCRSOverride = typeof data.overrides?.useCRS === 'boolean' ? data.overrides.useCRS : null
         this.globalCategories = clone(data.global?.categories)
-        this.globalSystemRules = clone(data.global?.systemRules)
         this.globalRules = Array.isArray(data.global?.customRules) ? clone(data.global.customRules) : []
         this.legacyRules = Array.isArray(data.global?.legacyRules) ? clone(data.global.legacyRules) : []
         this.overrides = clone(data.overrides?.categories)
-        this.systemOverrides = clone(data.overrides?.systemRules)
         const currentRules = this.scope === 'rule' ? data.overrides?.customRules : data.global?.customRules
         this.customRules = Array.isArray(currentRules) ? clone(currentRules) : []
         this.disabledGlobalIds = [...(data.overrides?.disabledGlobalIds || [])]
@@ -167,16 +144,6 @@ export default {
       else this.globalCategories[id] = value
     },
     clearCategory(id) { delete this.overrides[id] },
-    systemRuleEnabled(rule) {
-      if (!this.categoryEnabled(rule.category)) return false
-      if (this.scope === 'rule' && Object.hasOwn(this.systemOverrides, rule.id)) return this.systemOverrides[rule.id]
-      return this.globalSystemRules[rule.id] !== false
-    },
-    setSystemRule(id, value) {
-      if (this.scope === 'rule') this.systemOverrides[id] = value
-      else this.globalSystemRules[id] = value
-    },
-    clearSystemRule(id) { delete this.systemOverrides[id] },
     addCondition() {
       if (!this.visualForm.extraConditions) this.visualForm.extraConditions = []
       this.visualForm.extraConditions.push({ variable: '', operator: '', actions: '' })
@@ -234,8 +201,8 @@ export default {
       this.saving = true
       try {
         await props().saveWafConfig(this.scope === 'rule'
-          ? { useCRS: this.useCRSOverride, categories: this.overrides, systemRules: this.systemOverrides, customRules: this.customRules, disabledGlobalIds: this.disabledGlobalIds }
-          : { useCRS: this.globalUseCRS, categories: this.globalCategories, systemRules: this.globalSystemRules, customRules: this.customRules, legacyRules: this.legacyRules })
+          ? { useCRS: this.useCRSOverride, categories: this.overrides, customRules: this.customRules, disabledGlobalIds: this.disabledGlobalIds }
+          : { useCRS: this.globalUseCRS, categories: this.globalCategories, customRules: this.customRules, legacyRules: this.legacyRules })
         this.$message.success('保存成功')
         await this.load()
       } catch (e) { this.$message.error(e?.message || '保存失败') }

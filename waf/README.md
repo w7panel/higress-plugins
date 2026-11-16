@@ -1,8 +1,8 @@
 # WAF 插件前端
 
-基于现有 Higress WAF (`useCRS`、`secRules`) 的独立 MicroApp。系统规则按 OWASP CRS 3.3.2 类别开关，自定义规则使用 ModSecurity `SecRule` 语法。
+基于现有 Higress WAF (`useCRS`、`secRules`) 的独立 MicroApp。系统规则按类别开关，自定义规则使用 ModSecurity `SecRule` 语法。具体 CRS 规则版本取决于网关加载的 WAF 插件。
 
-“启用 OWASP CRS 系统规则”对应 `useCRS`：开启时加载整套 CRS，关闭时不加载 CRS，但仍执行自定义 `SecRule`。全局开关是域名规则的默认值；域名可覆盖，也可恢复继承。关闭 CRS 会让类别和单条系统规则设置暂不生效，可降低网关内存占用。
+“启用 OWASP CRS 系统规则”对应 `useCRS`：开启时加载整套 CRS，关闭时不加载 CRS，但仍执行自定义 `SecRule`。全局开关是域名规则的默认值；域名可覆盖，也可恢复继承。关闭 CRS 会让类别设置暂不生效，可降低网关内存占用。
 
 宿主通过 `window.$wujie.props` 提供 `configScope`、`domain`、`loadWafConfig()`、`saveWafConfig(config)` 和 `loadWafLogs()`。配置的校验、继承与编译由 w7panel-server 完成，前端不直接修改 WasmPlugin。
 
@@ -17,6 +17,37 @@
 短时对照测试只切换了 `w7panel-pluginwaf` 唯一域名规则的 `configDisable`：同一个 Envoy 进程的 RSS 在停用约 45 秒后从约 33.7 GiB 降至 1.7 GiB；恢复规则后又升至约 32.7 GiB。期间该容器的重启次数未增加。随后 WAF 资源被移除，新网关 Pod 就绪，RSS 约 1.7 GiB。**这证明高内存与启用该 WAF 配置强相关，但没有堆分析证据证明是持续泄漏。**
 
 [Higress WAF 2.0.0 源码](https://github.com/alibaba/higress/blob/76605194e6fc/plugins/wasm-go/extensions/waf/wasmplugin/plugin.go)在 `useCRS: true` 时加载 `@owasp_crs/*.conf` 并创建 Coraza WAF。结合 72 个 Envoy 工作线程，启停差值折合约 450 MiB/线程，推测是每个工作线程持有规则引擎造成的内存放大；具体分配仍需 Wasm/进程堆分析确认。类别开关使用的 `SecRuleRemoveById` 在 CRS 加载之后执行，不能代替关闭 `useCRS` 来避免整套 CRS 的加载。WAF 2.0.3 的这段加载代码与 2.0.0 相同，不能把单纯升级视为修复。
+
+### 单条 CRS 规则排查记录（2026-11-13）
+
+检查事故时的生效配置：`secRules` 含 4 条类别范围 `SecRuleRemoveById` 和 5 条自定义规则，**没有单条 ID 的 `SecRuleRemoveById`**。相关 WAF 配置摘录如下；自定义规则未在此复制：
+
+```yaml
+useCRS: true
+secRules:
+  - SecRuleRemoveById 934000-934999
+  - SecRuleRemoveById 944000-944999
+  - SecRuleRemoveById 913000-913999
+  - SecRuleRemoveById 942000-942999
+  # 另有 5 条自定义 SecRule
+```
+
+因此这次约 34 GiB 的现场内存不能归因于界面中的单条规则开关。类别关闭指令同样是在加载 CRS 后执行，不能避免加载峰值。
+
+用 WAF 2.0.0 对应的 Coraza 版本和内嵌的 55 个 CRS 文件，在本地原生 Go 进程中重复 3 次创建规则引擎；下表为每次测试约值：
+
+| 配置 | 创建期间总分配 | GC 后堆占用 |
+| --- | ---: | ---: |
+| 仅自定义规则 | 约 0 MiB | 0.8 MiB |
+| 加载整套 CRS | 67.4 MiB | 18.8 MiB |
+| CRS + 关闭单条 920100 | 67.4 MiB | 18.8 MiB |
+| CRS + 关闭 920–922 类别 | 67.8 MiB | 18.2 MiB |
+
+测试证明单条关闭指令不能减少 CRS 的加载分配；它不等同于 Envoy Wasm 的 72 线程内存测试，不能据此推算生产 RSS 或断定具体分配源。要查清约 34 GiB 的构成，还需对 Wasm/Envoy 做堆分析和不同线程数的实测。
+
+原界面单条规则清单按 CRS 3.3.2 编写，而 WAF 2.0.0 内嵌 CRS 标记为 `4.0.0-rc1`；核对发现清单中有 5 个 ID 不存在于内嵌规则，类别范围内另有 106 个实际 ID 未列出。该清单不能准确代表当前网关实际规则，现暂时移除单条 CRS 规则界面，保留类别与自定义规则功能。
+
+配套服务端已停止读取和编译 `systemRules`，再次保存全局配置时会清除旧的全局和域名覆盖字段，并重编译对应的 `secRules`；单独保存域名配置也会清除该域名的旧字段。部署新代码本身不会改写已下发的 WAF 资源，若曾用单条开关生成 `SecRuleRemoveById <ID>`，需重新保存配置才会从生效配置移除。当前生产 WAF 资源保持停用，未为本次排查重新启用。
 
 ### 推荐处理
 
