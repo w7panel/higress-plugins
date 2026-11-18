@@ -23,4 +23,6 @@
 
 “自定义规则”页的快捷条件生成固定的 403 拦截规则；“通用 SecRule”可填写 Coraza 匹配变量、操作符、动作，并通过添加 AND 条件生成链式规则。手填入口保留，服务端仅允许 SecRule 指令、单条配置最多 8192 字节、总数最多 100 条，保存时由 Coraza 编译校验。
 
+请求体规则需在“系统规则”页开启“启用自定义规则的请求体检查”。该设置由服务端编译为 `SecRequestBodyAccess On`，可在域名上覆盖或恢复全局；无需在手填规则中写非 SecRule 指令。开启后才会读取 POST 表单参数和 `REQUEST_BODY`，会增加网关请求体处理开销。
+
 参考：[Higress WAF 配置](https://github.com/alibaba/higress/blob/main/plugins/wasm-go/extensions/waf/README.md)、[OWASP CRS 3.3.2](https://github.com/coreruleset/coreruleset/tree/v3.3.2)、[雷池帮助文档](https://help.waf-ce.chaitin.cn/node/01973fc6-e12f-789f-a8ff-e81d383c80bc)。

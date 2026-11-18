@@ -4,6 +4,8 @@
 
 “启用 OWASP CRS 系统规则”对应 `useCRS`：开启时加载整套 CRS，关闭时不加载 CRS，但仍执行自定义 `SecRule`。全局开关是域名规则的默认值；域名可覆盖，也可恢复继承。关闭 CRS 会让类别设置暂不生效，可降低网关内存占用。
 
+使用 `REQUEST_BODY` 或 POST 表单参数等请求体变量时，打开“启用自定义规则的请求体检查”。服务端会在自定义规则前下发 `SecRequestBodyAccess On`；域名可覆盖全局设置。此开关默认关闭，开启会让网关读取请求体，可能增加内存占用。仅添加 phase 2 `SecRule` 不会自动启用请求体读取；`useCRS: false` 不影响这个开关。更新服务端和前端后，需重新保存对应配置才会改写已下发的 WasmPlugin。
+
 宿主通过 `window.$wujie.props` 提供 `configScope`、`domain`、`loadWafConfig()`、`saveWafConfig(config)` 和 `loadWafLogs()`。配置的校验、继承与编译由 w7panel-server 完成，前端不直接修改 WasmPlugin。
 
 运行 `make ui` 构建并生成 `dist/frontend.zip`。域名入口显示当前域名的日志；日志来自网关 Pod，受 Pod 日志保留时间限制。

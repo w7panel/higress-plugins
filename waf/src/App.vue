@@ -11,6 +11,12 @@
           <a-link v-if="scope === 'rule' && useCRSOverride !== null" @click="useCRSOverride = null">恢复全局</a-link>
         </div>
         <p class="rule-hint">关闭后不加载整套 CRS，下面的类别设置暂不生效；自定义 SecRule 仍然生效。开启 CRS 会增加网关内存占用。</p>
+        <div class="crs-config">
+          <a-switch :model-value="effectiveRequestBodyAccess" @change="setRequestBodyAccess" />
+          <span>启用自定义规则的请求体检查</span>
+          <a-link v-if="scope === 'rule' && requestBodyAccessOverride !== null" @click="requestBodyAccessOverride = null">恢复全局</a-link>
+        </div>
+        <p class="rule-hint">使用 REQUEST_BODY 或 POST 表单参数等请求体变量时开启；网关将读取请求体，可能增加内存占用。关闭不会改变 CRS 自身的请求体配置。</p>
         <a-table :columns="systemColumns" :data="categories" :pagination="false" row-key="id">
           <template #enabled="{ record }">
             <a-switch :model-value="categoryEnabled(record.id)" :disabled="!effectiveUseCRS" @change="value => setCategory(record.id, value)" />
@@ -91,7 +97,7 @@ export default {
     return {
       categories, methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
       tab: 'system', editorMode: 'visual', scope: 'global', domain: '',
-      globalUseCRS: true, useCRSOverride: null, globalCategories: {}, overrides: {}, globalRules: [], legacyRules: [], customRules: [], disabledGlobalIds: [],
+      globalUseCRS: true, useCRSOverride: null, globalRequestBodyAccess: false, requestBodyAccessOverride: null, globalCategories: {}, overrides: {}, globalRules: [], legacyRules: [], customRules: [], disabledGlobalIds: [],
       visualForm: { id: 1000000, type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] },
       editingKey: '', newRule: '', saving: false, loadingLogs: false, logs: [],
       systemColumns: [{ title: 'OWASP CRS 类别', dataIndex: 'title' }, { title: '开启', slotName: 'enabled', width: 180 }],
@@ -101,6 +107,7 @@ export default {
   },
   computed: {
     effectiveUseCRS() { return this.scope === 'rule' && this.useCRSOverride !== null ? this.useCRSOverride : this.globalUseCRS },
+    effectiveRequestBodyAccess() { return this.scope === 'rule' && this.requestBodyAccessOverride !== null ? this.requestBodyAccessOverride : this.globalRequestBodyAccess },
     visibleRules() {
       return [
         ...this.legacyRules.map((rule, index) => ({ id: parseRuleId(rule), rule, global: this.scope === 'rule', legacy: true, key: `legacy-${index}` })),
@@ -116,6 +123,10 @@ export default {
       if (this.scope === 'rule') this.useCRSOverride = value
       else this.globalUseCRS = value
     },
+    setRequestBodyAccess(value) {
+      if (this.scope === 'rule') this.requestBodyAccessOverride = value
+      else this.globalRequestBodyAccess = value
+    },
     async load() {
       const context = props()
       this.scope = context.configScope === 'rule' ? 'rule' : 'global'
@@ -125,6 +136,8 @@ export default {
         const data = await context.loadWafConfig()
         this.globalUseCRS = data.global?.useCRS !== false
         this.useCRSOverride = typeof data.overrides?.useCRS === 'boolean' ? data.overrides.useCRS : null
+        this.globalRequestBodyAccess = data.global?.requestBodyAccess === true
+        this.requestBodyAccessOverride = typeof data.overrides?.requestBodyAccess === 'boolean' ? data.overrides.requestBodyAccess : null
         this.globalCategories = clone(data.global?.categories)
         this.globalRules = Array.isArray(data.global?.customRules) ? clone(data.global.customRules) : []
         this.legacyRules = Array.isArray(data.global?.legacyRules) ? clone(data.global.legacyRules) : []
@@ -201,8 +214,8 @@ export default {
       this.saving = true
       try {
         await props().saveWafConfig(this.scope === 'rule'
-          ? { useCRS: this.useCRSOverride, categories: this.overrides, customRules: this.customRules, disabledGlobalIds: this.disabledGlobalIds }
-          : { useCRS: this.globalUseCRS, categories: this.globalCategories, customRules: this.customRules, legacyRules: this.legacyRules })
+          ? { useCRS: this.useCRSOverride, requestBodyAccess: this.requestBodyAccessOverride, categories: this.overrides, customRules: this.customRules, disabledGlobalIds: this.disabledGlobalIds }
+          : { useCRS: this.globalUseCRS, requestBodyAccess: this.globalRequestBodyAccess, categories: this.globalCategories, customRules: this.customRules, legacyRules: this.legacyRules })
         this.$message.success('保存成功')
         await this.load()
       } catch (e) { this.$message.error(e?.message || '保存失败') }
