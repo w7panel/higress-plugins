@@ -6,7 +6,10 @@ UI_DIST_DIR ?= dist
 UI_PACKAGE_NAME ?= frontend.zip
 UI_PACKAGE = $(UI_DIST_DIR)/$(UI_PACKAGE_NAME)
 
-.PHONY: build ui build-ui build-helm build-image push-zpk full check-version check-release publish clean
+.PHONY: build ui build-ui build-helm build-image push-zpk full check-version check-release publish clean local-test
+
+local-test:
+	$(NPM) run dev
 
 check-version:
 	@test -n "$(VERSION)" || { echo 'Set VERSION=x.y.z' >&2; exit 2; }

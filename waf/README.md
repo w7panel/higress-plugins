@@ -8,6 +8,20 @@
 
 宿主通过 `window.$wujie.props` 提供 `configScope`、`domain`、`loadWafConfig()`、`saveWafConfig(config)` 和 `loadWafLogs()`。配置的校验、继承与编译由 w7panel-server 完成，前端不直接修改 WasmPlugin。
 
+## 本地联调
+
+参考 `w7panel-kilo` 的独立页面方式，在本机启动开发服务器，直接打开 WAF 页面。开发服务器只代理 `/panel-api/v1/waf/*` 到 W7Panel；页面使用现有 WAF 配置与日志 API，首次请求时会提示输入面板令牌，令牌仅保存在当前页面内存中，刷新后需重新输入。需要使用已包含 WAF API 的 `w7panel-server` 版本。
+
+```sh
+cd waf
+npm ci
+npm run dev
+```
+
+打开 `http://127.0.0.1:8082/` 测试全局配置。测试域名配置时，打开 `http://127.0.0.1:8082/?scope=rule&namespace=default&ingressName=实际Ingress名称&domain=实际域名`。`namespace` 和 `ingressName` 必须与集群中的 Ingress 一致；`domain` 只用于页面显示，服务端会从 Ingress 读取真实域名。局域网测试可使用本机 IP 代替 `127.0.0.1`。面板地址不同可在启动前设置 `WAF_PANEL_ORIGIN`，默认是 `http://218.23.2.48:9090`。也可运行 `make local-test`。
+
+**本地保存会立即修改目标集群的 WAF 配置**，日志也来自真实网关。218 集群此前启用 `useCRS: true` 曾导致网关内存异常；联调时不要直接开启 CRS。结束测试后停止开发服务器。生产构建仍通过宿主注入接口工作。
+
 运行 `make ui` 构建并生成 `dist/frontend.zip`。域名入口显示当前域名的日志；日志来自网关 Pod，受 Pod 日志保留时间限制。
 
 设置环境变量 `VERSION=1.0.0` 和 `ZPK_IDC_PASSWORD` 后，运行 `make full` 将前端包发布到 ZPK 制品 `w7panel-pluginwaf`。本项目不打包 Helm Chart，也不升级集群中的 Helm release。

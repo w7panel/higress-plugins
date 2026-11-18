@@ -2,6 +2,9 @@ import { createApp } from 'vue'
 import ArcoVue from '@arco-design/web-vue'
 import '@arco-design/web-vue/dist/arco.css'
 import App from './App.vue'
+import { initLocalWaf } from './local-dev.mjs'
+
+if (process.env.NODE_ENV === 'development' && !window.__POWERED_BY_WUJIE__ && !window.$wujie) initLocalWaf()
 
 if (window.__POWERED_BY_WUJIE__) {
   // eslint-disable-next-line no-undef, camelcase
