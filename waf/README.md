@@ -20,7 +20,7 @@ npm run dev
 
 打开 `http://127.0.0.1:8082/` 测试全局配置。测试域名配置时，打开 `http://127.0.0.1:8082/?scope=rule&namespace=default&ingressName=实际Ingress名称&domain=实际域名`。`namespace` 和 `ingressName` 必须与集群中的 Ingress 一致；`domain` 只用于页面显示，服务端会从 Ingress 读取真实域名。局域网测试可使用本机 IP 代替 `127.0.0.1`。面板地址不同可在启动前设置 `WAF_PANEL_ORIGIN`，默认是 `http://218.23.2.48:9090`。也可运行 `make local-test`。
 
-**本地保存会立即修改目标集群的 WAF 配置**，日志也来自真实网关。218 集群此前启用 `useCRS: true` 曾导致网关内存异常；联调时不要直接开启 CRS。结束测试后停止开发服务器。生产构建仍通过宿主注入接口工作。
+**本地保存会立即修改目标集群的 WAF 配置**，日志也来自真实网关。218 集群的 72 线程网关即使只启用无 CRS 的空规则，也曾迅速接近 8 GiB 内存上限；联调时不要直接启用 WAF。结束测试后停止开发服务器。生产构建仍通过宿主注入接口工作。
 
 运行 `make ui` 构建并生成 `dist/frontend.zip`。域名入口显示当前域名的日志；日志来自网关 Pod，受 Pod 日志保留时间限制。
 
@@ -65,31 +65,55 @@ secRules:
 
 配套服务端已停止读取和编译 `systemRules`，再次保存全局配置时会清除旧的全局和域名覆盖字段，并重编译对应的 `secRules`；单独保存域名配置也会清除该域名的旧字段。部署新代码本身不会改写已下发的 WAF 资源，若曾用单条开关生成 `SecRuleRemoveById <ID>`，需重新保存配置才会从生效配置移除。当前生产 WAF 资源保持停用，未为本次排查重新启用。
 
+### 无 CRS 的空规则复测（2026-11-18）
+
+218 集群的网关仍为 Higress 2.2.3、WAF `waf:2.0.0`、Envoy `--concurrency 72`、单副本、容器内存上限 8 GiB。测试前 `defaultConfigDisable: true`、`matchRules: []`，Pod Ready，重启次数 2；容器 cgroup `memory.current` 连续 12 秒稳定在 2327–2329 MiB。
+
+只给测试域名 `whotest1.fan.b2.sz.w7.com` 的 Ingress 增加一条匹配规则，规则配置为 `useCRS: false`、`secRules: ["SecRuleEngine On"]`，**没有自定义 `SecRule`，也没有单条 CRS 关闭指令**。激活后约 7 秒，`memory.current` 从 2366、2383、2676 MiB 升至 7041 MiB，超过预设的 6500 MiB 停止阈值，脚本立即将 `matchRules` 恢复为空；因此没有继续测试单条自定义规则。cgroup 记录的 `memory.peak` 为 7120 MiB，`memory.events` 中 `oom` 与 `oom_kill` 均为 0，Pod 没有重启；恢复后约 1 分钟稳定在 2435 MiB 左右，测试域名返回 HTTP 200。
+
+这次测试表明，**即使下发的域名规则指定 `useCRS: false` 且没有自定义检测规则，启用 WAF 匹配规则也能让 72 工作线程的网关迅速接近 8 GiB 上限**。WAF 2.0.0 源码在 `useCRS: false` 时不主动加入 CRS 文件，但仅凭这次 cgroup 总量还无法定位分配；后续的线程数与 Wasm 指标对照见下文。不要把关闭 CRS 视为这个 72 线程网关上的内存安全保证。
+
+### 8 线程对照与 CRS 长时观察（2026-11-18）
+
+在同一台 218 网关上临时给 `pilot-agent proxy` 增加 `--concurrency 8`，确认新 Pod 的 Envoy 进程也显示 `--concurrency 8` 后，仍只给测试域名的 Ingress 启用 WAF 匹配规则。测试按阶段恢复 `matchRules: []`，容器内存达到 6500 MiB 或域名请求失败就立即停止；结束时移除启动参数并确认 72 线程 Pod Ready、WAF 关闭。该网关为单副本，测试期间发生了 Pod 滚动更新。
+
+| 阶段 | 配置 | `memory.current` 采样结果 | 域名访问 |
+| --- | --- | --- | --- |
+| 基线 | WAF 关闭 | 约 465–498 MiB | HTTP 200 |
+| 空规则，30 秒 | `useCRS: false`，仅 `SecRuleEngine On` | 峰值 1284 MiB，后约 1078 MiB | HTTP 200 |
+| 一条自定义规则，30 秒 | `useCRS: false`，增加一条不会命中的 URI 规则 | 峰值 1183 MiB，后约 1086 MiB | HTTP 200 |
+| CRS，30 秒 | `useCRS: true`，仅 `SecRuleEngine On` | 从 1133 MiB 持续升至 1387 MiB | HTTP 200 |
+| CRS，较长复测 | 从关闭状态重新启用相同 CRS 配置 | 从约 503 MiB 升至 1360 MiB；约 70 秒时 HTTP 探针超时，提前停止 | 先为 HTTP 200，后一次 5 秒超时 |
+
+较长复测时，网关日志出现 Envoy metrics 抓取 504/超时，Kubernetes 记录该 8 线程 Pod 就绪探针 503 和超时；这些现象与 WAF/CRS 启用同时发生，但尚无堆栈证明超时的具体原因。该 Pod 在测试期间没有重启，未观察到 8 GiB 内存上限触发；删除后无法再读取其 cgroup OOM 计数。**8 线程显著降低了短时内存占用，但本次没有证明 CRS 稳定，也不能把 8 线程直接作为生产配置。** 最终 WAF 恢复为 `defaultConfigDisable: true`、`matchRules: []`，网关恢复 72 线程、单副本、Ready，测试域名返回 HTTP 200；新 Pod 的 `memory.events` 中 `oom` 和 `oom_kill` 均为 0。
+
+还试过给网关 Pod 模板增加 `proxy.istio.io/config: "concurrency: 8\n"` 注解：新 Pod 含该注解，但 Envoy 仍以 72 线程启动，因此下面不能把该注解视为已验证的降线程方法。后续的逐线程 Wasm 指标对照见下文；CRS 加载期间的 CPU、就绪与延迟仍需另行验证。
+
+### 空规则与请求体检查的内存归因（2026-11-19）
+
+在 218 测试环境临时调整 Envoy 工作线程数，仅给 `default/ing-xuivtxkw` 启用 `useCRS: false` 的 WAF 匹配规则，连续采样容器 `memory.current`、Envoy RSS 和 `/memory` 分配器指标。各组启用前均使用新 Pod；测试达到 6500 MiB、请求失败或 Pod 失去就绪时停止并恢复配置。
+
+| 工作线程 | WAF 关闭 | 空规则启用 20 秒 | 增量 | Envoy 分配器 `allocated` 增量 |
+| ---: | ---: | ---: | ---: | ---: |
+| 8 | 472 MiB | 1086 MiB | 614 MiB | 约 106 MiB |
+| 16 | 645 MiB | 1615 MiB | 970 MiB | 约 117 MiB |
+| 32 | 956 MiB | 2661 MiB | 1705 MiB | 约 141 MiB |
+
+增量随工作线程数上升，而 Envoy `/memory` 的 `allocated` 只记录其中一小部分。另一次 8 线程实验将匹配规则设为 `secRules: []`，不发送测试请求：WAF 关闭时为 493 MiB，启用后约 10 秒达到 1092 MiB，随后 20 秒维持在 1091–1095 MiB。Envoy Wasm 指标同时出现 WAF 主线程及 8 个工作线程的 `memory_size`，**每个都是 48 MiB，合计 432 MiB**；这项指标与容器总量不能直接相加，剩余增量包含 Wasm 实例及运行时的其他内存。再加入 `SecRuleEngine On` 后，内存与逐线程指标基本不变。由此确认，本次无 CRS 空规则的主要固定开销来自 WAF 激活时按工作线程创建的 Wasm 实例；它不需要自定义 `SecRule`、请求体检查或实际请求触发。72 线程测试的 7041 MiB 未同步抓到逐线程指标，不能把全部峰值精确归因于这 48 MiB/实例。
+
+将已停用的默认配置从 `useCRS: true` 临时改为 `false`，保持匹配规则 `useCRS: false` 不变，8 线程启用 20 秒后的内存分别为 1086 和 1081 MiB。默认 CRS 被暗中合并加载不能解释空规则的内存暴涨。
+
+请求体开关的命中验证中，同一条 `ARGS_POST:probe` 的 phase 2 规则在 `SecRequestBodyAccess Off` 时返回 HTTP 200，在 `On` 时返回 HTTP 403，说明开关生效。内存对照中，8 线程下每组发送 32 个 1 MiB POST、并发数 8，两组均返回 HTTP 200：`Off` 的请求期峰值比组前高 99 MiB，`On` 高 108 MiB。两组顺序运行，缓存可能保留，9 MiB 差值只表示该负载下的量级；请求体大小与并发数继续增加时仍可能带来更高峰值。这次观察到的约 7 GiB 暴涨不以请求体检查为前提。
+
+原始采样保存在测试机 `/tmp/waf-memory-matrix-20261119.jsonl`、`/tmp/waf-wasm-stats-20261119.jsonl` 和 `/tmp/waf-body-load-20261119.jsonl`。测试结束已恢复 `defaultConfigDisable: true`、`matchRules: []`、默认 `useCRS: true` 和 Envoy 72 线程；Pod Ready、重启 0 次，`oom` 与 `oom_kill` 均为 0。
+
 ### 推荐处理
 
-1. 在完成验证前保持 WAF 资源停用。若只需要自定义规则，重新启用时设置 `useCRS: false`：不加载系统 CRS，自定义 `SecRule` 仍可执行。全局及域名设置可在本插件的“系统规则”页配置；重新安装插件前应确认生效配置，避免以 `useCRS: true` 在 72 线程网关上启动。
-2. 若必须使用 CRS，先在测试环境降低 Envoy 工作线程数，例如从 72 试到 8，再测网关 RSS、CPU、吞吐和延迟。按此次差值粗估，8 线程可能占用约 5–6 GiB；这只是容量估算。根据实测结果调整线程数，并在确定稳定峰值后设置合理的内存 request/limit。当前网关只有 1 个副本，生产变更应安排可回滚的滚动更新。
-3. 长期方案是让 CRS 规则引擎减少工作线程间的重复内存，或选用经过容量验证的其他 WAF 实现。修改前需通过堆分析确认实际分配位置。
+1. 在完成隔离环境容量验证前，保持 218 集群的 WAF 资源停用。只需要自定义规则时，应设置 `useCRS: false`，但 72 工作线程下空规则测试也曾迅速达到 7 GiB，不能直接在当前网关启用。全局及域名设置可在本插件的“系统规则”页配置；重新安装插件前应确认生效配置。
+2. 若必须使用 CRS，先在隔离环境测网关 RSS、CPU、吞吐、延迟和就绪状态。8 线程短时内存较低，但较长复测出现超时，不能仅按内存选择线程数；根据稳定峰值及可用性结果再设置内存 request/limit。当前网关只有 1 个副本，生产变更应安排可回滚的滚动更新。
+3. 长期方案是降低 WAF Wasm 实例和 CRS 规则引擎在各工作线程上的重复内存，或选用经过容量验证的其他 WAF 实现。修改前仍需通过堆分析确认完整分配位置。
 
-218 集群 Helm release 为 `higress`，Chart 版本为 `2.2.3`。限制工作线程的配置入口是 `higress-core.gateway.podAnnotations`，覆盖文件内容如下；这里**只记录方法，未修改集群**：
-
-```yaml
-higress-core:
-  gateway:
-    podAnnotations:
-      proxy.istio.io/config: |
-        concurrency: 8
-```
-
-升级时保留现有 Helm values，并把该文件传给 `helm upgrade`；升级前先用 `helm get values higress -n higress-system -o yaml` 备份现有 values，并用同版本 Chart 的 `helm upgrade --dry-run=client` 检查网关 Pod 注解。升级后确认新 Pod Ready、Envoy 参数出现 `--concurrency 8`，再按实际流量观察 RSS、CPU 和延迟；异常时用 `helm history` 查上一个 revision 并 `helm rollback`。此注解会触发网关 Pod 滚动重启，不能只修改 Deployment 顶层注解。
-
-在上面的 YAML 保存为 `/tmp/higress-waf-concurrency-8.yaml` 后，可用以下命令预览；确认后移除 `--dry-run=client` 才会实际升级：
-
-```sh
-curl -fL https://higress.io/helm-charts/higress-2.2.3.tgz -o /tmp/higress-2.2.3.tgz
-helm --kubeconfig ~/.kube/218.config -n higress-system get values higress -o yaml > /tmp/higress-values-before.yaml
-helm --kubeconfig ~/.kube/218.config -n higress-system upgrade higress /tmp/higress-2.2.3.tgz --reuse-values -f /tmp/higress-waf-concurrency-8.yaml --dry-run=client
-```
+218 集群 Helm release 为 `higress`，Chart 版本为 `2.2.3`。本次测试确认，临时给网关 Deployment 的容器 `args` 增加 `--concurrency 8` 能使 Envoy 按 8 线程启动；测试后已移除该参数。直接改 Deployment 会与 Helm 管理的模板产生差异，后续 Helm 升级可能覆盖它。持久配置应先查明该 Chart 的对应 values 入口并在隔离环境验证，不能沿用上面已证实无效的 Pod 注解示例。
 
 ## 系统规则 ID 与来源
 
