@@ -14,9 +14,38 @@ export const categories = [
   { id: 'leak', title: '响应数据泄露', range: '950000-955999' },
 ]
 
+function ruleIds(rule) {
+  const ids = []
+  for (const line of String(rule || '').split('\n')) {
+    const match = line.trim().match(/^SecRule\s+\S+\s+(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\S+)\s+(.+)$/)
+    if (!match) continue
+    let actions = match[1].trim()
+    if ((actions.startsWith('"') && actions.endsWith('"')) || (actions.startsWith("'") && actions.endsWith("'"))) actions = actions.slice(1, -1)
+    let token = ''
+    let quote = ''
+    let escaped = false
+    const addId = () => {
+      const id = token.trim().match(/^id\s*:\s*(\d+)$/i)
+      if (id) ids.push(id[1])
+      token = ''
+    }
+    for (const char of actions) {
+      if (escaped) { token += char; escaped = false }
+      else if (char === '\\') { token += char; escaped = true }
+      else if (quote) { token += char; if (char === quote) quote = '' }
+      else if (char === '"' || char === "'") { token += char; quote = char }
+      else if (char === ',') addId()
+      else token += char
+    }
+    addId()
+  }
+  return ids
+}
+
 export function parseRuleId(rule) {
-  const match = String(rule || '').match(/\bid\s*:\s*(\d+)/i)
-  return match ? Number(match[1]) : null
+  const ids = ruleIds(rule)
+  const id = Number(ids[0])
+  return ids.length === 1 && Number.isSafeInteger(id) ? id : null
 }
 
 export function validateCustomRules(rules) {
@@ -26,10 +55,11 @@ export function validateCustomRules(rules) {
     const text = item.rule?.trim() || ''
     if (text.split('\n').some(line => !line.trim().startsWith('SecRule '))) return '自定义规则只能包含 SecRule 指令'
     if (new TextEncoder().encode(text).length > 8192) return '单条自定义规则不能超过 8192 字节'
-    const matches = [...text.matchAll(/\bid\s*:\s*(\d+)/gi)]
+    const matches = ruleIds(text)
     if (matches.length !== 1) return '每条自定义规则需要且只能有一个规则 ID'
-    const id = Number(matches[0][1])
-    if (!id || id < 1000000) return '自定义规则需要大于等于 1000000 的唯一 ID'
+    const id = Number(matches[0])
+    if (!Number.isSafeInteger(id) || id < 1000000) return '自定义规则需要大于等于 1000000 的安全整数 ID'
+    if (item.id !== id) return '规则 ID 与规则内容不一致'
     if (ids.has(id)) return `规则 ID ${id} 重复`
     ids.add(id)
   }

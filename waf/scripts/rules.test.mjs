@@ -11,9 +11,29 @@ test('CRS categories have unique names and disjoint ID ranges', () => {
 test('custom rules require a unique ID outside the CRS range', () => {
   const rule = 'SecRule REQUEST_URI "@streq /admin" "id:1000001,phase:1,deny"'
   assert.equal(parseRuleId(rule), 1000001)
-  assert.equal(validateCustomRules([{ rule }]), '')
-  assert.match(validateCustomRules([{ rule }, { rule }]), /重复/)
-  assert.match(validateCustomRules([{ rule: rule.replace('1000001', '942001') }]), /大于等于/)
+  assert.equal(validateCustomRules([{ id: 1000001, rule }]), '')
+  assert.match(validateCustomRules([{ id: 1000001, rule }, { id: 1000001, rule }]), /重复/)
+  assert.match(validateCustomRules([{ id: 942001, rule: rule.replace('1000001', '942001') }]), /大于等于/)
+  assert.match(validateCustomRules([{ id: 1000002, rule }]), /不一致/)
+  assert.match(validateCustomRules([{ id: '1000001', rule }]), /不一致/)
+})
+
+test('rule IDs come from actions, not operator or message text', () => {
+  const fakeOperatorId = 'SecRule REQUEST_URI "@contains id:1000001" "phase:1,deny"'
+  const fakeMessageId = 'SecRule REQUEST_URI "@streq /admin" "msg:\'blocked,id:1000001\',phase:1,deny"'
+  assert.equal(parseRuleId(fakeOperatorId), null)
+  assert.equal(parseRuleId(fakeMessageId), null)
+  assert.match(validateCustomRules([{ id: 1000001, rule: fakeOperatorId }]), /只能有一个规则 ID/)
+  assert.match(validateCustomRules([{ id: 1000001, rule: fakeMessageId }]), /只能有一个规则 ID/)
+  const valid = 'SecRule REQUEST_URI "@streq /admin" "msg:\'blocked,id:9999999\',id:1000001,phase:1,deny"'
+  assert.equal(parseRuleId(valid), 1000001)
+  assert.equal(validateCustomRules([{ id: 1000001, rule: valid }]), '')
+})
+
+test('rule IDs must be safe integers', () => {
+  const rule = 'SecRule REQUEST_URI "@streq /admin" "id:9007199254740993,phase:1,deny"'
+  assert.equal(parseRuleId(rule), null)
+  assert.match(validateCustomRules([{ id: 9007199254740992, rule }]), /安全整数/)
 })
 
 test('visual rules round-trip through SecRule text', () => {
