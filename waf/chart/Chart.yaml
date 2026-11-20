@@ -1,0 +1,6 @@
+apiVersion: v2
+name: w7panel-waf
+description: Self-maintained W7Panel WAF Wasm plugin with OWASP CRS v4.30.0
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

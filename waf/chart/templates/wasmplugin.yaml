@@ -1,0 +1,26 @@
+apiVersion: extensions.higress.io/v1alpha1
+kind: WasmPlugin
+metadata:
+  name: w7panel-pluginwaf
+  namespace: {{ .Values.namespace }}
+  annotations:
+    higress.io/wasm-plugin-title: "WAF防护"
+    higress.io/wasm-plugin-description: "W7Panel 自维护 WAF，内置 OWASP CRS v4.30.0"
+    w7.cc/plugin-support-global: "true"
+    w7.cc/plugin-support-rule: "true"
+  labels:
+    w7.cc/group-name: w7panel-pluginwaf
+    higress.io/wasm-plugin-name: w7panel-pluginwaf
+    higress.io/wasm-plugin-version: {{ .Chart.Version | quote }}
+spec:
+  url: "oci://{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+  phase: AUTHZ
+  priority: 330
+  failStrategy: FAIL_OPEN
+  defaultConfigDisable: true
+  defaultConfig:
+    useCRS: true
+    paranoiaLevel: 1
+    engineMode: "On"
+    secRules: []
+  matchRules: []

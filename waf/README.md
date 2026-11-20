@@ -1,6 +1,23 @@
 # WAF 插件前端
 
-基于现有 Higress WAF (`useCRS`、`secRules`) 的独立 MicroApp。系统规则按类别开关，自定义规则使用 ModSecurity `SecRule` 语法。具体 CRS 规则版本取决于网关加载的 WAF 插件。
+独立维护的 WAF Wasm 与 MicroApp，内置 OWASP CRS v4.30.0。系统规则按实际 conf 文件加载；自定义规则使用 ModSecurity `SecRule` 语法。
+
+## 自维护版本（2026-11-20）
+
+- Wasm 源码和固定版本 CRS 在 `wasm/`；CRS 上游提交 `e03a4f6dabc7a30ebd8c52c97d28a154f590a48f`，原许可证保留于 `wasm/CRS-LICENSE`。Higress 原插件代码许可证见 `wasm/HIGRESS-LICENSE`。
+- `python3 generate_catalog.py --check` 核对 627 条规则、21 个检测 conf 的清单与中文名称映射；映射缺 ID、缺中文名称、重复 ID 或清单过期时失败。中文名称按规则类别与攻击类型标注，原始英文 `message` 保留供逐条核对；界面继续隐藏单条 CRS 规则开关。
+- 全局策略可设置 CRS 总开关、PL1–PL4、`SecRuleEngine` 的 `On`、`DetectionOnly`、`Off`、请求体检查和自定义规则。域名可覆盖 conf 类别、CRS 总开关、请求体检查，并禁用继承的全局自定义规则。自定义规则 ID 从 1000000 起。
+- `VERSION=0.1.0-crs4.30.0-verified make build-image` 构建 `ccr.ccs.tencentyun.com/afan-public/w7panel-waf:<版本>`；`make push-image` 推送。构建固定使用 Higress Go 1.24.4、Coraza 3.3.3、`no_fs_access` 标签和 `https://goproxy.cn,direct` 模块镜像。`make build-helm` 生成默认停用的 WasmPlugin Chart。新资源默认 PL1、On，旧策略不迁移。当前 218 Helm release 还包含 MicroApp，测试换镜像时应备份并只修改 WasmPlugin，不能直接用这个 Chart 升级原 release。
+- 发布顺序：先构建并推送 Wasm，备份原 WasmPlugin YAML，保持 `defaultConfigDisable: true` 与 `matchRules: []` 切换 OCI 地址和清空旧配置；再发布匹配的服务端与前端。仅在受控测试窗口临时启用域名规则，达到 6500 MiB、就绪失败或请求失败立即回滚。最终恢复 WAF 停用和 Envoy 72 线程。
+
+### 218 引擎与 Go 版本对照（2026-11-20）
+
+- Go 1.26 构建的 Coraza 3.8.1 Wasm 被 218 的 Envoy 拒绝，报 WASI `path_link` 导入签名不匹配；Go 1.24.3 构建的 Coraza 3.3.3 可加载，但不带 `no_fs_access` 时初始化尝试写 `/tmp/checkfsfile…` 而失败。最终源码由项目 Dockerfile 的 Higress Go 1.24.4 builder 加 `no_fs_access` 构建，镜像 `ccr.ccs.tencentyun.com/afan-public/w7panel-waf:0.1.0-crs4.30.0-verified`，digest `sha256:766579e81490017bca6a057aa3812c413d6ecb765f4dd1c9f532e4071ecc5832`。
+- 在 218 临时设 Envoy 2 线程、仅匹配测试 Ingress：停用基线约 384 MiB；自定义 URI 规则在下发约 15 秒后返回 403，稳定约 856–858 MiB；表单 `ARGS_POST` 规则在请求体检查关闭时返回 200、开启后返回 403，两阶段稳定约 858–861 MiB。内存是容器 cgroup `memory.current`，不同阶段会有短时初始化峰值。
+- 仅加载 SQLi conf 时，冷加载期间一次 4 秒探针超时触发自动回滚；将探针超时延长至 15 秒的独立复测中，下发约 15 秒时一次请求耗时 2.46 秒并返回 200，下发约 20 秒后命中返回 403，稳定时约 1004 MiB、测试峰值 1160 MiB。Go 版本和构建标签解决了 Wasm 加载兼容性，**没有消除 CRS 冷加载造成的延迟风险**。这些是 2 线程短时结果，尚未验证 72 线程、全套 CRS 的容量与可用性，218 WAF 继续停用。
+- 两轮测试均在结束时恢复 `defaultConfigDisable: true`、`matchRules: []` 和 Envoy 72 线程；Pod Ready、HTTP 200，`memory.events` 的 `oom` 与 `oom_kill` 均为 0。原始样本在测试机 `/tmp/waf-independent/218-validation.jsonl` 和 `/tmp/waf-independent/218-sqli.jsonl`。
+
+以下为旧 Higress WAF 2.0.0 的历史排查记录，数据不代表自维护版本的容量。
 
 “启用 OWASP CRS 系统规则”对应 `useCRS`：开启时加载整套 CRS，关闭时不加载 CRS，但仍执行自定义 `SecRule`。全局开关是域名规则的默认值；域名可覆盖，也可恢复继承。关闭 CRS 会让类别设置暂不生效，可降低网关内存占用。
 
@@ -24,7 +41,7 @@ npm run dev
 
 运行 `make ui` 构建并生成 `dist/frontend.zip`。域名入口显示当前域名的日志；日志来自网关 Pod，受 Pod 日志保留时间限制。
 
-设置环境变量 `VERSION=1.0.0` 和 `ZPK_IDC_PASSWORD` 后，运行 `make full` 将前端包发布到 ZPK 制品 `w7panel-pluginwaf`。本项目不打包 Helm Chart，也不升级集群中的 Helm release。
+设置环境变量 `VERSION=1.0.0` 和 `ZPK_IDC_PASSWORD` 后，运行 `make full` 构建、推送 Wasm 镜像和前端 ZPK，并打包 Helm Chart。执行前确认同版本服务端已准备好；该命令不自动升级集群中的 Helm release。
 
 ## 218 集群 Envoy 内存异常（2026-11-12）
 

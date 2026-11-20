@@ -1,0 +1,4 @@
+image:
+  repository: ccr.ccs.tencentyun.com/afan-public/w7panel-waf
+  tag: "0.1.0-crs4.30.0-verified"
+namespace: higress-system

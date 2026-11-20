@@ -1,11 +1,16 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildVisualRule, categories, parseRuleId, parseVisualRule, validateCustomRules } from '../src/rules.mjs'
+import { readFileSync } from 'node:fs'
+import { buildVisualRule, parseRuleId, parseVisualRule, validateCustomRules } from '../src/rules.mjs'
 
-test('CRS categories have unique names and disjoint ID ranges', () => {
-  assert.equal(new Set(categories.map(item => item.id)).size, categories.length)
-  const ranges = categories.map(item => item.range.split('-').map(Number))
-  for (let i = 1; i < ranges.length; i += 1) assert.ok(ranges[i - 1][1] < ranges[i][0])
+test('CRS catalog files match generated rule inventory', () => {
+  const catalog = JSON.parse(readFileSync(new URL('../system-rules.json', import.meta.url)))
+  assert.equal(catalog.crsVersion, 'v4.30.0')
+  assert.equal(catalog.files.length, 21)
+  assert.equal(new Set(catalog.files.map(item => item.name)).size, catalog.files.length)
+  assert.equal(new Set(catalog.rules.map(item => item.id)).size, catalog.rules.length)
+  const files = new Set(catalog.files.map(item => item.name))
+  for (const rule of catalog.rules.filter(item => !item.internal)) assert.ok(files.has(rule.file))
 })
 
 test('custom rules require a unique ID outside the CRS range', () => {
