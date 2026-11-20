@@ -84,9 +84,14 @@
         </a-space>
       </a-tab-pane>
       <a-tab-pane key="logs" title="防护日志">
-        <a-alert type="info" class="scope-note">仅显示网关 Pod 保留的近期日志。</a-alert>
-        <a-button :loading="loadingLogs" @click="loadLogs">刷新</a-button>
-        <a-table :columns="logColumns" :data="logs" :loading="loadingLogs" row-key="key" class="log-table" />
+        <a-spin v-if="checkingMetrics" tip="正在检查监控应用" />
+        <a-alert v-else-if="metricsError" type="error" class="scope-note">{{ metricsError }} <a-link @click="loadLogs">重试</a-link></a-alert>
+        <a-alert v-else-if="!hasMetrics" type="warning" class="scope-note">未安装面板监控，安装后可查看防护日志。</a-alert>
+        <template v-else>
+          <a-alert type="info" class="scope-note">显示监控组件保存的最近一小时 WAF 拦截记录。</a-alert>
+          <a-button :loading="loadingLogs" @click="loadLogs">刷新</a-button>
+          <a-table :columns="logColumns" :data="logs" :loading="loadingLogs" row-key="key" class="log-table" />
+        </template>
       </a-tab-pane>
     </a-tabs>
     <div v-if="tab !== 'logs'" class="actions"><a-button type="primary" :loading="saving" @click="save">保存配置</a-button></div>
@@ -95,6 +100,7 @@
 
 <script>
 import { buildVisualRule, parseRuleId, parseVisualRule, validateCustomRules } from './rules.mjs'
+import { fetchWafLogs, metricsInstalled } from './logs.mjs'
 
 const clone = value => JSON.parse(JSON.stringify(value || {}))
 const props = () => window.$wujie?.props || {}
@@ -106,10 +112,10 @@ export default {
       tab: 'system', editorMode: 'visual', scope: 'global', domain: '',
       globalUseCRS: true, useCRSOverride: null, globalRequestBodyAccess: false, requestBodyAccessOverride: null, globalCategories: {}, overrides: {}, globalRules: [], customRules: [], disabledGlobalIds: [],
       visualForm: { id: 1000000, type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] },
-      editingKey: '', newRule: '', saving: false, loadingLogs: false, logs: [],
+      editingKey: '', newRule: '', saving: false, loadingLogs: false, checkingMetrics: false, hasMetrics: false, metricsError: '', logs: [],
       systemColumns: [{ title: 'OWASP CRS 类别', dataIndex: 'titleZh' }, { title: '开启', slotName: 'enabled', width: 180 }],
       customColumns: [{ title: '规则 ID', dataIndex: 'id', width: 130 }, { title: 'SecRule', slotName: 'rule' }, { title: '操作', slotName: 'operation', width: 140 }],
-      logColumns: [{ title: '时间', dataIndex: 'time' }, { title: '域名', dataIndex: 'domain' }, { title: '路径', dataIndex: 'path' }, { title: '规则 ID', dataIndex: 'ruleId' }, { title: '动作', dataIndex: 'action' }, { title: '来源 IP', dataIndex: 'clientIp' }],
+      logColumns: [{ title: '时间', dataIndex: 'time' }, { title: '域名', dataIndex: 'domain' }, { title: '路径', dataIndex: 'path' }, { title: '状态码', dataIndex: 'status' }],
     }
   },
   computed: {
@@ -227,9 +233,14 @@ export default {
       finally { this.saving = false }
     },
     async loadLogs() {
-      if (typeof props().loadWafLogs !== 'function') return this.$message.error('当前面板未提供 WAF 日志接口')
+      this.checkingMetrics = true
+      this.metricsError = ''
+      try { this.hasMetrics = await metricsInstalled(props()) }
+      catch (e) { this.metricsError = e?.message || '检查面板监控失败' }
+      finally { this.checkingMetrics = false }
+      if (!this.hasMetrics || this.metricsError) return
       this.loadingLogs = true
-      try { this.logs = await props().loadWafLogs() }
+      try { this.logs = await fetchWafLogs(props(), this.scope === 'rule' ? this.domain : '') }
       catch (e) { this.$message.error(e?.message || '读取日志失败') }
       finally { this.loadingLogs = false }
     },

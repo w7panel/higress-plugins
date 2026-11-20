@@ -23,7 +23,7 @@
 
 使用 `REQUEST_BODY` 或 POST 表单参数等请求体变量时，打开“启用自定义规则的请求体检查”。服务端会在自定义规则前下发 `SecRequestBodyAccess On`；域名可覆盖全局设置。此开关默认关闭，开启会让网关读取请求体，可能增加内存占用。仅添加 phase 2 `SecRule` 不会自动启用请求体读取；`useCRS: false` 不影响这个开关。更新服务端和前端后，需重新保存对应配置才会改写已下发的 WasmPlugin。
 
-宿主通过 `window.$wujie.props` 提供 `configScope`、`domain`、`loadWafConfig()`、`saveWafConfig(config)` 和 `loadWafLogs()`。配置的校验、继承与编译由 w7panel-server 完成，前端不直接修改 WasmPlugin。
+宿主通过 `window.$wujie.props` 提供 `configScope`、`domain`、`loadWafConfig()`、`saveWafConfig(config)`、`k8sproxy` 和 `panelProxy`。配置的校验、继承与编译由 w7panel-server 完成，前端不直接修改 WasmPlugin。防护日志先按主面板的做法检查 `default/w7panel-metrics` AppGroup；存在时经 `panelProxy('traffic/waf-logs')` 查询 metrics-traffic 保存于 VictoriaLogs 的最近一小时拦截记录。该日志不再由 w7panel-server 读取网关 Pod；监控采集当前不保存规则 ID 和来源 IP，因此界面只显示时间、域名、路径和状态码。
 
 ## 本地联调
 
@@ -39,7 +39,7 @@ npm run dev
 
 **本地保存会立即修改目标集群的 WAF 配置**，日志也来自真实网关。218 集群的 72 线程网关即使只启用无 CRS 的空规则，也曾迅速接近 8 GiB 内存上限；联调时不要直接启用 WAF。结束测试后停止开发服务器。生产构建仍通过宿主注入接口工作。
 
-运行 `make ui` 构建并生成 `dist/frontend.zip`。域名入口显示当前域名的日志；日志来自网关 Pod，受 Pod 日志保留时间限制。
+运行 `make ui` 构建并生成 `dist/frontend.zip`。域名入口只查询当前域名的日志；日志保留时间由 VictoriaLogs 配置决定。
 
 设置环境变量 `VERSION=1.0.0` 和 `ZPK_IDC_PASSWORD` 后，运行 `make full` 构建、推送 Wasm 镜像和前端 ZPK，并打包 Helm Chart。执行前确认同版本服务端已准备好；该命令不自动升级集群中的 Helm release。
 

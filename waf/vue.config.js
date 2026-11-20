@@ -12,6 +12,14 @@ module.exports = defineConfig({
         target: process.env.WAF_PANEL_ORIGIN || 'http://218.23.2.48:9090',
         changeOrigin: true,
       },
+      '/panel-api/v1/traffic': {
+        target: process.env.WAF_PANEL_ORIGIN || 'http://218.23.2.48:9090',
+        changeOrigin: true,
+      },
+      '/k8s-proxy': {
+        target: process.env.WAF_PANEL_ORIGIN || 'http://218.23.2.48:9090',
+        changeOrigin: true,
+      },
     },
     headers: {
       'Access-Control-Allow-Origin': '*',
