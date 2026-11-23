@@ -11,7 +11,7 @@ export async function metricsInstalled(props) {
 export async function fetchWafLogs(props, domain) {
   if (typeof props.panelProxy !== 'function') throw new Error('当前面板未提供监控查询代理接口')
   const query = domain ? `?domain=${encodeURIComponent(domain)}` : ''
-  const response = await props.panelProxy(`traffic/waf-logs${query}`)
+  const response = await props.panelProxy(`namespaces/default/services/metrics-traffic:8080/proxy/api/v1/traffic/waf-logs${query}`)
   const payload = await response.json().catch(() => null)
   if (!response.ok) throw new Error(payload?.msg || `读取防护日志失败（${response.status}）`)
   return (payload?.data || []).map((row, index) => ({ ...row, key: `${row.time}-${index}` }))

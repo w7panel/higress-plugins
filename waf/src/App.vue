@@ -82,7 +82,7 @@
               </a-select>
               <a-input v-else-if="visualForm.type !== 'advanced'" v-model="visualForm.value" :placeholder="visualForm.type === 'ip' ? '例如 192.0.2.0/24' : '匹配值'" />
             </div>
-            <p class="rule-hint">快捷条件命中后返回 403。通用 SecRule 可填写 Coraza 支持的变量、操作符和动作；多个条件按 AND 链接，保存时由服务端编译校验。</p>
+            <p class="rule-hint">快捷条件命中后返回 403。通用 SecRule 可填写 Coraza 支持的变量、操作符和动作；多个条件按 AND 链接。保存时检查格式和规则 ID，完整语法由网关加载时检验。</p>
           </a-tab-pane>
           <a-tab-pane v-if="editingKey" key="manual" title="手填 SecRule">
             <a-input-number v-model="visualForm.id" :min="1000000" :precision="0" placeholder="规则 ID" />
@@ -110,6 +110,7 @@
 </template>
 
 <script>
+import { loadWafConfig, saveWafConfig } from './backend.mjs'
 import { buildVisualRule, parseRuleId, parseVisualRule, replaceRuleId, validateCustomRules } from './rules.mjs'
 import { fetchWafLogs, metricsInstalled } from './logs.mjs'
 
@@ -155,9 +156,9 @@ export default {
       const context = props()
       this.scope = context.configScope === 'rule' ? 'rule' : 'global'
       this.domain = context.domain || ''
-      if (typeof context.loadWafConfig !== 'function') return this.$message.error('当前面板未提供 WAF 配置接口')
+      if (typeof context.panelProxy !== 'function') return this.$message.error('当前面板未提供服务代理接口')
       try {
-        const data = await context.loadWafConfig()
+        const data = await loadWafConfig(context)
         this.globalUseCRS = data.global?.useCRS !== false
         this.useCRSOverride = typeof data.overrides?.useCRS === 'boolean' ? data.overrides.useCRS : null
         this.globalRequestBodyAccess = data.global?.requestBodyAccess === true
@@ -270,7 +271,7 @@ export default {
       if (error) return this.$message.error(error)
       this.saving = true
       try {
-        await props().saveWafConfig(this.scope === 'rule'
+        await saveWafConfig(props(), this.scope === 'rule'
           ? { useCRS: this.useCRSOverride, requestBodyAccess: this.requestBodyAccessOverride, categories: this.overrides, ruleStates: this.ruleOverrides, disabledGlobalIds: this.disabledGlobalIds }
           : { useCRS: this.globalUseCRS, requestBodyAccess: this.globalRequestBodyAccess, categories: this.globalCategories, ruleStates: this.globalRuleStates, customRules: this.customRules, paranoiaLevel: this.paranoiaLevel, engineMode: this.engineMode })
         this.$message.success('保存成功')

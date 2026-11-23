@@ -19,8 +19,8 @@ test('WAF log query is scoped to the current domain', async () => {
     return { ok: true, json: async () => ({ data: [{ time: '2026-11-20T00:00:00Z', path: '/blocked' }] }) }
   } }
   const rows = await fetchWafLogs(props, 'example.com')
-  assert.equal(calls[0], 'traffic/waf-logs?domain=example.com')
+  assert.equal(calls[0], 'namespaces/default/services/metrics-traffic:8080/proxy/api/v1/traffic/waf-logs?domain=example.com')
   assert.equal(rows[0].key, '2026-11-20T00:00:00Z-0')
   await fetchWafLogs(props, '')
-  assert.equal(calls[1], 'traffic/waf-logs')
+  assert.equal(calls[1], 'namespaces/default/services/metrics-traffic:8080/proxy/api/v1/traffic/waf-logs')
 })

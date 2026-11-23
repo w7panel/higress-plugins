@@ -1,4 +1,4 @@
-# WAF 插件前端
+# WAF 插件
 
 独立维护的 WAF Wasm 与 MicroApp，内置 OWASP CRS v4.30.0。系统规则按实际 conf 文件加载；自定义规则使用 ModSecurity `SecRule` 语法。
 
@@ -8,7 +8,7 @@
 - `python3 generate_catalog.py --check` 核对 627 条规则、21 个检测 conf 的清单与中文名称映射；映射缺 ID、缺中文名称、重复 ID 或清单过期时失败。中文名称按 CRS 检测消息逐条整理，原始英文 `message` 保留供逐条核对；界面按 conf 折叠显示检测规则，可逐条开关。
 - 全局策略可设置 CRS 总开关、PL1–PL4、`SecRuleEngine` 的 `On`、`DetectionOnly`、`Off`、请求体检查和自定义规则。域名可覆盖 conf 类别、CRS 总开关、请求体检查，并禁用继承的全局自定义规则。自定义规则 ID 从 1000000 起。
 - `VERSION=0.1.0-crs4.30.0-verified make build-image` 构建 `ccr.ccs.tencentyun.com/afan-public/w7panel-waf:<版本>`；`make push-image` 推送。构建固定使用 Higress Go 1.24.4、Coraza 3.3.3、`no_fs_access` 标签和 `https://goproxy.cn,direct` 模块镜像。`make build-helm` 生成默认停用的 WasmPlugin Chart。新资源默认 PL1、On，旧策略不迁移。当前 218 Helm release 还包含 MicroApp，测试换镜像时应备份并只修改 WasmPlugin，不能直接用这个 Chart 升级原 release。
-- 发布顺序：先构建并推送 Wasm，备份原 WasmPlugin YAML，保持 `defaultConfigDisable: true` 与 `matchRules: []` 切换 OCI 地址和清空旧配置；再发布匹配的服务端与前端。仅在受控测试窗口临时启用域名规则，达到 6500 MiB、就绪失败或请求失败立即回滚。最终恢复 WAF 停用和 Envoy 72 线程。
+- 发布顺序：先构建并推送 Wasm，备份原 WasmPlugin YAML，保持 `defaultConfigDisable: true` 与 `matchRules: []` 切换 OCI 地址和清空旧配置；再发布 WAF 前端，最后发布移除旧 WAF 路由的面板。仅在受控测试窗口临时启用域名规则，达到 6500 MiB、就绪失败或请求失败立即回滚。最终恢复 WAF 停用和 Envoy 72 线程。
 
 ### 218 引擎与 Go 版本对照（2026-11-20）
 
@@ -21,13 +21,13 @@
 
 “启用 OWASP CRS 系统规则”对应 `useCRS`：开启时加载整套 CRS，关闭时不加载 CRS，但仍执行自定义 `SecRule`。全局开关是域名规则的默认值；域名可覆盖，也可恢复继承。关闭 CRS 会让类别设置暂不生效，可降低网关内存占用。
 
-使用 `REQUEST_BODY` 或 POST 表单参数等请求体变量时，打开“启用自定义规则的请求体检查”。服务端会在自定义规则前下发 `SecRequestBodyAccess On`；域名可覆盖全局设置。此开关默认关闭，开启会让网关读取请求体，可能增加内存占用。仅添加 phase 2 `SecRule` 不会自动启用请求体读取；`useCRS: false` 不影响这个开关。更新服务端和前端后，需重新保存对应配置才会改写已下发的 WasmPlugin。
+使用 `REQUEST_BODY` 或 POST 表单参数等请求体变量时，打开“启用自定义规则的请求体检查”。MicroApp 会在自定义规则前写入 `SecRequestBodyAccess On`；域名可覆盖全局设置。此开关默认关闭，开启会让网关读取请求体，可能增加内存占用。仅添加 phase 2 `SecRule` 不会自动启用请求体读取；`useCRS: false` 不影响这个开关。更新前端后，需重新保存对应配置才会改写已下发的 WasmPlugin。
 
-宿主通过 `window.$wujie.props` 提供 `configScope`、`domain`、`loadWafConfig()`、`saveWafConfig(config)`、`k8sproxy` 和 `panelProxy`。配置的校验、继承与编译由 w7panel-server 完成，前端不直接修改 WasmPlugin。防护日志先按主面板的做法检查 `default/w7panel-metrics` AppGroup；存在时经 `panelProxy('traffic/waf-logs')` 查询 metrics-traffic 保存于 VictoriaLogs 的最近一小时拦截记录。该日志不再由 w7panel-server 读取网关 Pod；监控采集当前不保存规则 ID 和来源 IP，因此界面只显示时间、域名、路径和状态码。
+宿主通过 `window.$wujie.props` 提供 `configScope`、`domain`、`namespace`、`ingressName`、`k8sproxy`、`panelProxy` 和 `refreshPluginConfig()`。MicroApp 在浏览器内校验、继承、编译策略，通过宿主 `k8sproxy` 以当前用户权限直接读写 WasmPlugin JSON（Kubernetes YAML 资源）。保存时保留 `metadata.resourceVersion`，并发修改由 Kubernetes 拒绝。域名配置还需能读取相应 Ingress。自定义 SecRule 由前端检查格式和 ID，完整语法仍由网关加载时检验。防护日志先检查 `default/w7panel-metrics` AppGroup；存在时经面板通用 Service 代理访问 `default/metrics-traffic:8080` 的 `/api/v1/traffic/waf-logs`，查询 metrics-traffic 保存于 VictoriaLogs 的最近一小时拦截记录。
 
 ## 本地联调
 
-参考 `w7panel-kilo` 的独立页面方式，在本机启动开发服务器，直接打开 WAF 页面。开发服务器只代理 `/panel-api/v1/waf/*` 到 W7Panel；页面使用现有 WAF 配置与日志 API，首次请求时会提示输入面板令牌，令牌仅保存在当前页面内存中，刷新后需重新输入。需要使用已包含 WAF API 的 `w7panel-server` 版本。
+参考 `w7panel-kilo` 的独立页面方式，在本机启动开发服务器，直接打开 WAF 页面。开发服务器代理 `/k8s-proxy/*` 和日志使用的 `/panel-api/v1/*` 到 W7Panel；首次请求时会提示输入面板令牌，令牌仅保存在当前页面内存中，刷新后需重新输入。当前用户需有读取和更新 WAF WasmPlugin 的 Kubernetes 权限。
 
 ```sh
 cd waf
@@ -35,13 +35,13 @@ npm ci
 npm run dev
 ```
 
-打开 `http://127.0.0.1:8082/` 测试全局配置。测试域名配置时，打开 `http://127.0.0.1:8082/?scope=rule&namespace=default&ingressName=实际Ingress名称&domain=实际域名`。`namespace` 和 `ingressName` 必须与集群中的 Ingress 一致；`domain` 只用于页面显示，服务端会从 Ingress 读取真实域名。局域网测试可使用本机 IP 代替 `127.0.0.1`。面板地址不同可在启动前设置 `WAF_PANEL_ORIGIN`，默认是 `http://218.23.2.48:9090`。也可运行 `make local-test`。
+打开 `http://127.0.0.1:8082/` 测试全局配置。测试域名配置时，打开 `http://127.0.0.1:8082/?scope=rule&namespace=default&ingressName=实际Ingress名称&domain=实际域名`。`namespace` 和 `ingressName` 必须与集群中的 Ingress 一致；`domain` 只用于页面显示，MicroApp 会从 Ingress 读取真实域名。局域网测试可使用本机 IP 代替 `127.0.0.1`。面板地址不同可在启动前设置 `WAF_PANEL_ORIGIN`，默认是 `http://218.23.2.48:9090`。也可运行 `make local-test`。
 
 **本地保存会立即修改目标集群的 WAF 配置**，日志也来自真实网关。218 集群的 72 线程网关即使只启用无 CRS 的空规则，也曾迅速接近 8 GiB 内存上限；联调时不要直接启用 WAF。结束测试后停止开发服务器。生产构建仍通过宿主注入接口工作。
 
 运行 `make ui` 构建并生成 `dist/frontend.zip`。域名入口只查询当前域名的日志；日志保留时间由 VictoriaLogs 配置决定。
 
-设置环境变量 `VERSION=1.0.0` 和 `ZPK_IDC_PASSWORD` 后，运行 `make full` 构建、推送 Wasm 镜像和前端 ZPK，并打包 Helm Chart。执行前确认同版本服务端已准备好；该命令不自动升级集群中的 Helm release。
+设置环境变量 `VERSION=1.0.0` 和 `ZPK_IDC_PASSWORD` 后，运行 `make full` 构建、推送 Wasm 镜像和前端 ZPK，并打包 Helm Chart。先切换插件前端并验证直接读写 WasmPlugin，再发布移除旧 `/waf/config` 路由的面板版本。该命令不自动升级集群中的 Helm release。
 
 ## 218 集群 Envoy 内存异常（2026-11-12）
 
@@ -134,7 +134,7 @@ secRules:
 
 ## 系统规则 ID 与来源
 
-本目录的“协议与请求格式”类别使用 `920000-922999` 作为关闭范围。前端映射见 `src/rules.mjs`，服务端映射见 `w7panel-server/common/service/waf/config.go`。关闭类别时生成的 `SecRuleRemoveById 920000-922999` 会停用该范围内已加载的 CRS 规则；这些 ID 属于系统规则，不是用户自定义规则。
+旧版 WAF 的“协议与请求格式”类别使用 `920000-922999` 作为关闭范围。以下为旧版规则 ID 的历史记录；当前自维护版本的规则清单见 `system-rules.json`，编译逻辑见 `config.go`。
 
 以下清单以 [OWASP CRS 3.3.2 的 920 规则文件](https://github.com/coreruleset/coreruleset/blob/v3.3.2/rules/REQUEST-920-PROTOCOL-ENFORCEMENT.conf)和[921 规则文件](https://github.com/coreruleset/coreruleset/blob/v3.3.2/rules/REQUEST-921-PROTOCOL-ATTACK.conf)中的 `id:` 为准。完整文件列表见 [CRS 3.3.2 rules 目录](https://github.com/coreruleset/coreruleset/tree/v3.3.2/rules)；该版本没有 `REQUEST-922` 文件或 922xxx 规则。
 

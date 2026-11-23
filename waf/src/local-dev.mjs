@@ -1,4 +1,4 @@
-// Standalone development uses the same WAF API as the panel host.
+// Standalone development uses the same Kubernetes proxy as the panel host.
 export function initLocalWaf() {
   const query = new URLSearchParams(window.location.search)
   const scope = query.get('scope') === 'rule' ? 'rule' : 'global'
@@ -11,25 +11,16 @@ export function initLocalWaf() {
     if (!token) throw new Error('未输入 W7Panel 面板令牌')
     return fetch(path, {
       ...options,
-      headers: { 'X-W7Panel-Token': token, ...(options.body ? { 'Content-Type': 'application/json' } : {}) },
+      headers: { ...options.headers, 'X-W7Panel-Token': token },
     })
-  }
-
-  async function request(path, options = {}) {
-    if (scope === 'rule' && (!namespace || !ingressName)) throw new Error('域名测试需要 namespace 和 ingressName 参数')
-    const params = new URLSearchParams({ scope, ...(scope === 'rule' ? { namespace, ingressName } : {}) })
-    const response = await send(`/panel-api/v1/waf/${path}?${params}`, options)
-    const payload = await response.json()
-    if (!response.ok || (payload.code && payload.code !== 200)) throw new Error(payload.msg || `WAF 请求失败（${response.status}）`)
-    return payload.data
   }
 
   window.$wujie = { props: {
     configScope: scope,
+    namespace,
+    ingressName,
     domain: query.get('domain') || ingressName,
-    loadWafConfig: () => request('config'),
-    saveWafConfig: policy => request('config', { method: 'PUT', body: JSON.stringify({ scope, namespace, ingressName, policy }) }),
-    k8sproxy: path => send(`/k8s-proxy${path}`),
-    panelProxy: path => send(`/panel-api/v1/${path}`),
+    k8sproxy: (path, options) => send(`/k8s-proxy${path}`, options),
+    panelProxy: (path, options) => send(`/panel-api/v1/${path}`, options),
   } }
 }
