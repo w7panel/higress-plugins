@@ -23,7 +23,15 @@
           <a-link v-if="scope === 'rule' && requestBodyAccessOverride !== null" @click="requestBodyAccessOverride = null">恢复全局</a-link>
         </div>
         <p class="rule-hint">使用 REQUEST_BODY 或 POST 表单参数等请求体变量时开启；网关将读取请求体，可能增加内存占用。关闭不会改变 CRS 自身的请求体配置。</p>
-        <a-table :columns="systemColumns" :data="categories" :pagination="false" row-key="name">
+        <a-table :columns="systemColumns" :data="categories" :pagination="false" :expandable="{}" row-key="name">
+          <template #expand-row="{ record }">
+            <a-table :columns="ruleColumns" :data="categoryRules(record.name)" :pagination="false" row-key="id">
+              <template #ruleEnabled="{ record: rule }">
+                <a-switch :model-value="ruleEnabled(rule.id)" :disabled="!effectiveUseCRS || !categoryEnabled(rule.file)" @change="value => setRuleState(rule.id, value)" />
+                <a-link v-if="scope === 'rule' && Object.hasOwn(ruleOverrides, rule.id)" @click="clearRuleState(rule.id)">恢复全局</a-link>
+              </template>
+            </a-table>
+          </template>
           <template #enabled="{ record }">
             <a-switch :model-value="categoryEnabled(record.name)" :disabled="!effectiveUseCRS" @change="value => setCategory(record.name, value)" />
             <a-link v-if="scope === 'rule' && Object.hasOwn(overrides, record.name)" @click="clearCategory(record.name)">恢复全局</a-link>
@@ -31,9 +39,12 @@
         </a-table>
       </a-tab-pane>
       <a-tab-pane key="custom" title="自定义规则">
+        <a-button v-if="scope === 'global'" :disabled="!!inlineDraft" @click="startInlineAdd">添加规则</a-button>
         <a-table :columns="customColumns" :data="visibleRules" :pagination="false" row-key="key">
-          <template #rule="{ record }"><code>{{ record.rule }}</code></template>
+          <template #id="{ record }"><span v-if="record.draft" class="id-entry"><strong>100</strong><a-input v-model="inlineDraft.suffix" :max-length="4" placeholder="后四位" /></span><span v-else>{{ record.id }}</span></template>
+          <template #rule="{ record }"><a-textarea v-if="record.draft" v-model="inlineDraft.rule" :auto-size="{ minRows: 3, maxRows: 8 }" placeholder='SecRule REQUEST_URI "@streq /admin" "id:1000000,phase:1,deny"' /><code v-else>{{ record.rule }}</code></template>
           <template #operation="{ record }">
+            <template v-if="record.draft"><a-link @click="saveInlineRule">确定</a-link><a-link @click="inlineDraft = null">取消</a-link></template>
             <a-link v-if="scope === 'rule' && record.id" @click="toggleGlobalRule(record)">{{ disabledGlobalIds.includes(record.id) ? '恢复继承' : '当前域名禁用' }}</a-link>
             <template v-else-if="scope === 'global'">
               <a-link @click="editRule(record)">编辑</a-link>
@@ -73,13 +84,13 @@
             </div>
             <p class="rule-hint">快捷条件命中后返回 403。通用 SecRule 可填写 Coraza 支持的变量、操作符和动作；多个条件按 AND 链接，保存时由服务端编译校验。</p>
           </a-tab-pane>
-          <a-tab-pane key="manual" title="手填 SecRule">
+          <a-tab-pane v-if="editingKey" key="manual" title="手填 SecRule">
             <a-input-number v-model="visualForm.id" :min="1000000" :precision="0" placeholder="规则 ID" />
             <a-textarea v-model="newRule" placeholder='SecRule REQUEST_URI "@streq /admin" "id:1000001,phase:1,deny"' :auto-size="{ minRows: 3, maxRows: 8 }" />
           </a-tab-pane>
         </a-tabs>
         <a-space v-if="scope === 'global'">
-          <a-button @click="addRule">{{ editingKey ? '更新规则' : '添加自定义规则' }}</a-button>
+          <a-button v-if="editorMode === 'visual' || editingKey" @click="addRule">{{ editingKey ? '更新规则' : '添加可视化规则' }}</a-button>
           <a-button v-if="editingKey" @click="resetEditor">取消编辑</a-button>
         </a-space>
       </a-tab-pane>
@@ -99,7 +110,7 @@
 </template>
 
 <script>
-import { buildVisualRule, parseRuleId, parseVisualRule, validateCustomRules } from './rules.mjs'
+import { buildVisualRule, parseRuleId, parseVisualRule, replaceRuleId, validateCustomRules } from './rules.mjs'
 import { fetchWafLogs, metricsInstalled } from './logs.mjs'
 
 const clone = value => JSON.parse(JSON.stringify(value || {}))
@@ -108,13 +119,14 @@ const props = () => window.$wujie?.props || {}
 export default {
   data() {
     return {
-      categories: [], paranoiaLevel: 1, engineMode: 'On', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+      categories: [], systemRules: [], globalRuleStates: {}, ruleOverrides: {}, inlineDraft: null, paranoiaLevel: 1, engineMode: 'On', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
       tab: 'system', editorMode: 'visual', scope: 'global', domain: '',
       globalUseCRS: true, useCRSOverride: null, globalRequestBodyAccess: false, requestBodyAccessOverride: null, globalCategories: {}, overrides: {}, globalRules: [], customRules: [], disabledGlobalIds: [],
       visualForm: { id: 1000000, type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] },
       editingKey: '', newRule: '', saving: false, loadingLogs: false, checkingMetrics: false, hasMetrics: false, metricsError: '', logs: [],
       systemColumns: [{ title: 'OWASP CRS 类别', dataIndex: 'titleZh' }, { title: '开启', slotName: 'enabled', width: 180 }],
-      customColumns: [{ title: '规则 ID', dataIndex: 'id', width: 130 }, { title: 'SecRule', slotName: 'rule' }, { title: '操作', slotName: 'operation', width: 140 }],
+      ruleColumns: [{ title: 'ID', dataIndex: 'id', width: 100 }, { title: '防护名称', dataIndex: 'nameZh' }, { title: '严格程度', dataIndex: 'paranoiaLevel', render: ({ record }) => record.paranoiaLevel ? `PL${record.paranoiaLevel}` : '默认', width: 100 }, { title: '开启', slotName: 'ruleEnabled', width: 180 }],
+      customColumns: [{ title: '规则 ID', slotName: 'id', width: 130 }, { title: 'SecRule', slotName: 'rule' }, { title: '操作', slotName: 'operation', width: 140 }],
       logColumns: [{ title: '时间', dataIndex: 'time' }, { title: '域名', dataIndex: 'domain' }, { title: '路径', dataIndex: 'path' }, { title: '状态码', dataIndex: 'status' }],
     }
   },
@@ -122,8 +134,10 @@ export default {
     effectiveUseCRS() { return this.scope === 'rule' && this.useCRSOverride !== null ? this.useCRSOverride : this.globalUseCRS },
     effectiveRequestBodyAccess() { return this.scope === 'rule' && this.requestBodyAccessOverride !== null ? this.requestBodyAccessOverride : this.globalRequestBodyAccess },
     visibleRules() {
-      return (this.scope === 'rule' ? this.globalRules : this.customRules)
+      const rows = (this.scope === 'rule' ? this.globalRules : this.customRules)
         .map(item => ({ ...item, key: `rule-${item.id}` }))
+      if (this.inlineDraft && this.scope === 'global') rows.push({ ...this.inlineDraft, key: 'draft', draft: true })
+      return rows
     },
   },
   created() { this.load() },
@@ -149,6 +163,10 @@ export default {
         this.globalRequestBodyAccess = data.global?.requestBodyAccess === true
         this.requestBodyAccessOverride = typeof data.overrides?.requestBodyAccess === 'boolean' ? data.overrides.requestBodyAccess : null
         this.categories = Array.isArray(data.catalog?.files) ? data.catalog.files : []
+        this.systemRules = Array.isArray(data.catalog?.rules) ? data.catalog.rules.filter(rule => !rule.internal && rule.message) : []
+        this.globalRuleStates = clone(data.global?.ruleStates)
+        this.ruleOverrides = clone(data.overrides?.ruleStates)
+        this.inlineDraft = null
         this.paranoiaLevel = data.global?.paranoiaLevel || 1
         this.engineMode = data.global?.engineMode || 'On'
         this.globalCategories = clone(data.global?.categories)
@@ -168,6 +186,33 @@ export default {
       else this.globalCategories[id] = value
     },
     clearCategory(id) { delete this.overrides[id] },
+    categoryRules(name) { return this.systemRules.filter(rule => rule.file === name) },
+    ruleEnabled(id) {
+      return this.scope === 'rule' && Object.hasOwn(this.ruleOverrides, id)
+        ? this.ruleOverrides[id] : this.globalRuleStates[id] !== false
+    },
+    setRuleState(id, enabled) {
+      if (this.scope === 'rule') this.ruleOverrides[id] = enabled
+      else this.globalRuleStates[id] = enabled
+    },
+    clearRuleState(id) { delete this.ruleOverrides[id] },
+    startInlineAdd() {
+      let id = 1000000
+      const used = new Set(this.customRules.map(rule => rule.id))
+      while (used.has(id)) id++
+      this.inlineDraft = { suffix: String(id).slice(3), rule: '' }
+    },
+    saveInlineRule() {
+      if (!/^\d{4}$/.test(this.inlineDraft.suffix)) return this.$message.error('规则 ID 后四位需要填写数字')
+      const id = Number(`100${this.inlineDraft.suffix}`)
+      const rule = replaceRuleId(this.inlineDraft.rule.trim(), id)
+      if (!rule) return this.$message.error('规则内容需要包含 id 动作')
+      const item = { id, rule }
+      const error = validateCustomRules([...this.customRules, item])
+      if (error) return this.$message.error(error)
+      this.customRules.push(item)
+      this.inlineDraft = null
+    },
     addCondition() {
       if (!this.visualForm.extraConditions) this.visualForm.extraConditions = []
       this.visualForm.extraConditions.push({ variable: '', operator: '', actions: '' })
@@ -201,7 +246,7 @@ export default {
       } else {
         const id = Number(this.visualForm.id)
         if (!Number.isSafeInteger(id) || id < 1000000) return this.$message.error('规则 ID 必须从 1000000 开始')
-        const rule = this.newRule.trim().replace(/\bid\s*:\s*\d+/i, `id:${id}`)
+        const rule = replaceRuleId(this.newRule.trim(), id)
         if (parseRuleId(rule) !== id) return this.$message.error('手填 SecRule 首条规则需要包含 id 动作')
         item = { id, rule }
       }
@@ -220,13 +265,14 @@ export default {
         ? this.disabledGlobalIds.filter(id => id !== item.id) : [...this.disabledGlobalIds, item.id]
     },
     async save() {
+      if (this.inlineDraft) return this.$message.error('请先确认或取消新增规则')
       const error = validateCustomRules(this.customRules)
       if (error) return this.$message.error(error)
       this.saving = true
       try {
         await props().saveWafConfig(this.scope === 'rule'
-          ? { useCRS: this.useCRSOverride, requestBodyAccess: this.requestBodyAccessOverride, categories: this.overrides, disabledGlobalIds: this.disabledGlobalIds }
-          : { useCRS: this.globalUseCRS, requestBodyAccess: this.globalRequestBodyAccess, categories: this.globalCategories, customRules: this.customRules, paranoiaLevel: this.paranoiaLevel, engineMode: this.engineMode })
+          ? { useCRS: this.useCRSOverride, requestBodyAccess: this.requestBodyAccessOverride, categories: this.overrides, ruleStates: this.ruleOverrides, disabledGlobalIds: this.disabledGlobalIds }
+          : { useCRS: this.globalUseCRS, requestBodyAccess: this.globalRequestBodyAccess, categories: this.globalCategories, ruleStates: this.globalRuleStates, customRules: this.customRules, paranoiaLevel: this.paranoiaLevel, engineMode: this.engineMode })
         this.$message.success('保存成功')
         await this.load()
       } catch (e) { this.$message.error(e?.message || '保存失败') }
@@ -256,6 +302,8 @@ body { margin: 0; color: #1d2129; font-family: -apple-system, BlinkMacSystemFont
 .crs-config { display: flex; align-items: center; gap: 10px; margin: 4px 0 8px; }
 .section-title { margin: 22px 0 10px; font-weight: 600; }
 .rule-input, .log-table { margin: 16px 0; }
+.id-entry { display: flex; align-items: center; gap: 4px; }
+.id-entry .arco-input-wrapper { width: 76px; }
 .visual-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0; }
 .chained-condition { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 12px; border: 1px solid #e5e6eb; border-radius: 4px; }
 .rule-hint { color: #86909c; font-size: 12px; }

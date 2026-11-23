@@ -177,8 +177,8 @@ PL 栏的“—”表示规则没有 `paranoia-level` 标签，主要是辅助�
 | 932340 | 无参数的 Unix 命令执行 | PL1 |
 | 932330 | Unix Shell 历史命令调用 | PL1 |
 | 932160 | Unix Shell 代码注入 | PL1 |
-| 932170 | Shellshock（CVE-2014-6271） | PL1 |
-| 932171 | Shellshock（CVE-2014-6271） | PL1 |
+| 932170 | Shellshock 命令注入（CVE-2014-6271） | PL1 |
+| 932171 | Shellshock 命令注入（CVE-2014-6271） | PL1 |
 | 932175 | Unix Shell 别名调用 | PL1 |
 | 932180 | 上传受限文件 | PL1 |
 | 932370 | Windows 命令注入 | PL1 |
@@ -201,7 +201,7 @@ PL 栏的“—”表示规则没有 `paranoia-level` 标签，主要是辅助�
 | 932236 | 未混淆的 Unix 命令注入 | PL2 |
 | 932239 | User-Agent 或 Referer 中的 Unix 命令注入 | PL2 |
 | 932161 | 请求头中的 Unix Shell 代码 | PL2 |
-| 932390 | Shell fork bomb | PL2 |
+| 932390 | Shell 分叉炸弹拒绝服务 | PL2 |
 | 932232 | Unix 命令注入 | PL3 |
 | 932237 | 请求头中的 Unix Shell 代码 | PL3 |
 | 932238 | 请求头中的 Unix Shell 代码 | PL3 |

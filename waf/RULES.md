@@ -4,8 +4,8 @@
 
 逐条中文防护名称及 PL 对照见 [CRS 规则名称整理](CRS-RULE-CATALOG.md)。
 
-系统规则界面只显示 conf 类别，不显示单条规则开关。关闭某一类别时，服务端从 `ruleFiles` 中移除该 conf，Wasm 不编译其中的检测规则。CRS 初始化、异常评分和阻断评估文件始终加载。全局可以选择 PL1–PL4 和 `SecRuleEngine On`、`DetectionOnly`、`Off`；域名只能继承这些全局设置。
+系统规则界面按 conf 类别折叠显示检测规则，默认开启，可在全局或域名下逐条覆盖开关。关闭单条规则时，服务端生成 `SecRuleRemoveById <ID>`；仅允许清单中的检测规则 ID。关闭某一类别时，服务端从 `ruleFiles` 中移除该 conf，Wasm 不编译其中的检测规则。CRS 初始化、异常评分和阻断评估文件始终加载。全局可以选择 PL1–PL4 和 `SecRuleEngine On`、`DetectionOnly`、`Off`；域名只能继承这些全局设置。
 
-自定义规则仅在全局创建，ID 从 1000000 起。域名可禁用或恢复继承的全局规则，也可覆盖 CRS 总开关、conf 类别与请求体检查开关。保存时服务端再次校验文件名、ID 和 Coraza 语法。旧版策略及旧的 `SecRuleRemoveById` 指令不迁移。
+自定义规则仅在全局创建，ID 从 1000000 起。域名可禁用或恢复继承的全局规则，也可覆盖 CRS 总开关、conf 类别与请求体检查开关。保存时服务端再次校验文件名、ID 和 Coraza 语法。旧版策略不迁移；新增的单条规则开关仅按新策略重新编译。
 
 CRS 来源：[OWASP Core Rule Set v4.30.0](https://github.com/coreruleset/coreruleset/tree/v4.30.0)。

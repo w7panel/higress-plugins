@@ -1,35 +1,49 @@
 function ruleIds(rule) {
   const ids = []
-  for (const line of String(rule || '').split('\n')) {
+  for (const [lineIndex, line] of String(rule || '').split('\n').entries()) {
     const match = line.trim().match(/^SecRule\s+\S+\s+(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\S+)\s+(.+)$/)
     if (!match) continue
     let actions = match[1].trim()
-    if ((actions.startsWith('"') && actions.endsWith('"')) || (actions.startsWith("'") && actions.endsWith("'"))) actions = actions.slice(1, -1)
+    let offset = line.length - match[1].length + match[1].indexOf(actions)
+    if ((actions.startsWith('"') && actions.endsWith('"')) || (actions.startsWith("'") && actions.endsWith("'"))) { actions = actions.slice(1, -1); offset++ }
     let token = ''
+    let tokenStart = 0
     let quote = ''
     let escaped = false
-    const addId = () => {
+    const addId = end => {
       const id = token.trim().match(/^id\s*:\s*(\d+)$/i)
-      if (id) ids.push(id[1])
+      if (id) ids.push({ id: id[1], lineIndex, start: offset + tokenStart, end: offset + end })
       token = ''
+      tokenStart = end + 1
     }
-    for (const char of actions) {
+    for (let index = 0; index < actions.length; index++) {
+      const char = actions[index]
       if (escaped) { token += char; escaped = false }
       else if (char === '\\') { token += char; escaped = true }
       else if (quote) { token += char; if (char === quote) quote = '' }
       else if (char === '"' || char === "'") { token += char; quote = char }
-      else if (char === ',') addId()
+      else if (char === ',') addId(index)
       else token += char
     }
-    addId()
+    addId(actions.length)
   }
   return ids
 }
 
 export function parseRuleId(rule) {
   const ids = ruleIds(rule)
-  const id = Number(ids[0])
+  const id = Number(ids[0]?.id)
   return ids.length === 1 && Number.isSafeInteger(id) ? id : null
+}
+
+export function replaceRuleId(rule, id) {
+  if (!Number.isSafeInteger(id) || id < 1000000) return null
+  const matches = ruleIds(rule)
+  if (matches.length !== 1) return null
+  const { lineIndex, start, end } = matches[0]
+  const lines = String(rule).split('\n')
+  lines[lineIndex] = lines[lineIndex].slice(0, start) + `id:${id}` + lines[lineIndex].slice(end)
+  return lines.join('\n')
 }
 
 export function validateCustomRules(rules) {
@@ -41,7 +55,7 @@ export function validateCustomRules(rules) {
     if (new TextEncoder().encode(text).length > 8192) return '单条自定义规则不能超过 8192 字节'
     const matches = ruleIds(text)
     if (matches.length !== 1) return '每条自定义规则需要且只能有一个规则 ID'
-    const id = Number(matches[0])
+    const id = Number(matches[0].id)
     if (!Number.isSafeInteger(id) || id < 1000000) return '自定义规则需要大于等于 1000000 的安全整数 ID'
     if (item.id !== id) return '规则 ID 与规则内容不一致'
     if (ids.has(id)) return `规则 ID ${id} 重复`

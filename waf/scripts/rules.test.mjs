@@ -1,12 +1,13 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { buildVisualRule, parseRuleId, parseVisualRule, validateCustomRules } from '../src/rules.mjs'
+import { buildVisualRule, parseRuleId, parseVisualRule, replaceRuleId, validateCustomRules } from '../src/rules.mjs'
 
 test('CRS catalog files match generated rule inventory', () => {
   const catalog = JSON.parse(readFileSync(new URL('../system-rules.json', import.meta.url)))
   assert.equal(catalog.crsVersion, 'v4.30.0')
   assert.equal(catalog.files.length, 21)
+  assert.equal(catalog.rules.find(item => item.id === 933100).nameZh, 'PHP 起始标签检测')
   assert.equal(new Set(catalog.files.map(item => item.name)).size, catalog.files.length)
   assert.equal(new Set(catalog.rules.map(item => item.id)).size, catalog.rules.length)
   const files = new Set(catalog.files.map(item => item.name))
@@ -83,4 +84,12 @@ test('advanced visual rules generate an editable AND chain', () => {
   assert.deepEqual(parseVisualRule(item.rule), form)
   assert.equal(validateCustomRules([item]), '')
   assert.match(validateCustomRules([{ ...item, rule: `${item.rule}\nSecRuleEngine Off` }]), /只能包含/)
+})
+
+test('inline editor replaces only the action ID', () => {
+  const rule = 'SecRule REQUEST_URI "@contains id:77" "msg:\'seen id:77\',phase:1,id:77,deny"'
+  const replaced = replaceRuleId(rule, 1000000)
+  assert.equal(replaced, 'SecRule REQUEST_URI "@contains id:77" "msg:\'seen id:77\',phase:1,id:1000000,deny"')
+  assert.equal(parseRuleId(replaced), 1000000)
+  assert.equal(replaceRuleId('SecRule REQUEST_URI "@streq /" "phase:1,deny"', 1000000), null)
 })

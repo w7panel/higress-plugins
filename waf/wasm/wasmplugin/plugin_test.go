@@ -19,6 +19,7 @@ func TestBuildDirectives(t *testing.T) {
 		{"custom only", `{"useCRS":false,"engineMode":"DetectionOnly","secRules":["SecRule REQUEST_URI \"@streq /probe\" \"id:1000000,phase:1,deny\""]}`, "SecRuleEngine DetectionOnly", "Include @owasp_crs/"},
 		{"one conf", `{"useCRS":true,"paranoiaLevel":2,"ruleFiles":["REQUEST-942-APPLICATION-ATTACK-SQLI.conf"]}`, "Include @owasp_crs/REQUEST-942-APPLICATION-ATTACK-SQLI.conf", "Include @owasp_crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf"},
 		{"all conf", `{"useCRS":true}`, "Include @owasp_crs/REQUEST-941-APPLICATION-ATTACK-XSS.conf", ""},
+		{"one rule disabled", `{"useCRS":true,"ruleFiles":["REQUEST-942-APPLICATION-ATTACK-SQLI.conf"],"secRules":["SecRuleRemoveById 942100"]}`, "SecRuleRemoveById 942100", ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
