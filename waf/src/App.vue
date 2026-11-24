@@ -41,19 +41,18 @@
       <a-tab-pane key="custom" title="自定义规则">
         <a-button v-if="scope === 'global'" :disabled="!!inlineDraft" @click="startInlineAdd">添加规则</a-button>
         <a-table :columns="customColumns" :data="visibleRules" :pagination="false" row-key="key">
-          <template #id="{ record }"><span v-if="record.draft" class="id-entry"><strong>100</strong><a-input v-model="inlineDraft.suffix" :max-length="4" placeholder="后四位" /></span><span v-else>{{ record.id }}</span></template>
+          <template #id="{ record }"><span v-if="record.draft" class="id-entry"><strong v-if="inlineDraft.editingId">{{ inlineDraft.editingId }}</strong><template v-else><strong>100</strong><a-input v-model="inlineDraft.suffix" :max-length="4" placeholder="后四位" /></template></span><span v-else>{{ record.id }}</span></template>
           <template #rule="{ record }"><a-textarea v-if="record.draft" v-model="inlineDraft.rule" :auto-size="{ minRows: 3, maxRows: 8 }" placeholder='SecRule REQUEST_URI "@streq /admin" "id:1000000,phase:1,deny"' /><code v-else>{{ record.rule }}</code></template>
           <template #operation="{ record }">
             <template v-if="record.draft"><a-link @click="saveInlineRule">确定</a-link><a-link @click="inlineDraft = null">取消</a-link></template>
             <a-link v-if="scope === 'rule' && record.id" @click="toggleGlobalRule(record)">{{ disabledGlobalIds.includes(record.id) ? '恢复继承' : '当前域名禁用' }}</a-link>
-            <template v-else-if="scope === 'global'">
-              <a-link @click="editRule(record)">编辑</a-link>
-              <a-link status="danger" @click="removeRule(record.key)">删除</a-link>
+            <template v-else-if="scope === 'global' && !record.draft">
+              <a-link :disabled="!!inlineDraft" @click="editRule(record)">编辑</a-link>
+              <a-link status="danger" :disabled="!!inlineDraft" @click="removeRule(record.key)">删除</a-link>
             </template>
           </template>
         </a-table>
-        <a-tabs v-if="scope === 'global'" v-model:active-key="editorMode" class="rule-input">
-          <a-tab-pane key="visual" title="可视化配置">
+        <div v-if="scope === 'global'" class="rule-input">
             <div class="visual-form">
               <a-input-number v-model="visualForm.id" :min="1000000" :precision="0" placeholder="规则 ID" />
               <a-select v-model="visualForm.type" placeholder="匹配条件">
@@ -83,14 +82,9 @@
               <a-input v-else-if="visualForm.type !== 'advanced'" v-model="visualForm.value" :placeholder="visualForm.type === 'ip' ? '例如 192.0.2.0/24' : '匹配值'" />
             </div>
             <p class="rule-hint">快捷条件命中后返回 403。通用 SecRule 可填写 Coraza 支持的变量、操作符和动作；多个条件按 AND 链接。保存时检查格式和规则 ID，完整语法由网关加载时检验。</p>
-          </a-tab-pane>
-          <a-tab-pane v-if="editingKey" key="manual" title="手填 SecRule">
-            <a-input-number v-model="visualForm.id" :min="1000000" :precision="0" placeholder="规则 ID" />
-            <a-textarea v-model="newRule" placeholder='SecRule REQUEST_URI "@streq /admin" "id:1000001,phase:1,deny"' :auto-size="{ minRows: 3, maxRows: 8 }" />
-          </a-tab-pane>
-        </a-tabs>
+        </div>
         <a-space v-if="scope === 'global'">
-          <a-button v-if="editorMode === 'visual' || editingKey" @click="addRule">{{ editingKey ? '更新规则' : '添加可视化规则' }}</a-button>
+          <a-button @click="addRule">{{ editingKey ? '更新规则' : '添加可视化规则' }}</a-button>
           <a-button v-if="editingKey" @click="resetEditor">取消编辑</a-button>
         </a-space>
       </a-tab-pane>
@@ -111,7 +105,7 @@
 
 <script>
 import { loadWafConfig, saveWafConfig } from './backend.mjs'
-import { buildVisualRule, parseRuleId, parseVisualRule, replaceRuleId, validateCustomRules } from './rules.mjs'
+import { buildVisualRule, parseVisualRule, replaceRuleId, validateCustomRules } from './rules.mjs'
 import { fetchWafLogs, openTrafficInstall, trafficInstalled } from './logs.mjs'
 
 const clone = value => JSON.parse(JSON.stringify(value || {}))
@@ -121,10 +115,10 @@ export default {
   data() {
     return {
       categories: [], systemRules: [], globalRuleStates: {}, ruleOverrides: {}, inlineDraft: null, paranoiaLevel: 1, engineMode: 'On', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
-      tab: 'system', editorMode: 'visual', scope: 'global', domain: '',
+      tab: 'system', scope: 'global', domain: '',
       globalUseCRS: true, useCRSOverride: null, globalRequestBodyAccess: false, requestBodyAccessOverride: null, globalCategories: {}, overrides: {}, globalRules: [], customRules: [], disabledGlobalIds: [],
       visualForm: { id: 1000000, type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] },
-      editingKey: '', newRule: '', saving: false, loadingLogs: false, checkingMetrics: false, hasMetrics: false, metricsError: '', logs: [],
+      editingKey: '', saving: false, loadingLogs: false, checkingMetrics: false, hasMetrics: false, metricsError: '', logs: [],
       systemColumns: [{ title: 'OWASP CRS 类别', dataIndex: 'titleZh' }, { title: '开启', slotName: 'enabled', width: 180 }],
       ruleColumns: [{ title: 'ID', dataIndex: 'id', width: 100 }, { title: '防护名称', dataIndex: 'nameZh' }, { title: '严格程度', dataIndex: 'paranoiaLevel', render: ({ record }) => record.paranoiaLevel ? `PL${record.paranoiaLevel}` : '默认', width: 100 }, { title: '开启', slotName: 'ruleEnabled', width: 180 }],
       customColumns: [{ title: '规则 ID', slotName: 'id', width: 130 }, { title: 'SecRule', slotName: 'rule' }, { title: '操作', slotName: 'operation', width: 140 }],
@@ -136,6 +130,7 @@ export default {
     effectiveRequestBodyAccess() { return this.scope === 'rule' && this.requestBodyAccessOverride !== null ? this.requestBodyAccessOverride : this.globalRequestBodyAccess },
     visibleRules() {
       const rows = (this.scope === 'rule' ? this.globalRules : this.customRules)
+        .filter(item => item.id !== this.inlineDraft?.editingId)
         .map(item => ({ ...item, key: `rule-${item.id}` }))
       if (this.inlineDraft && this.scope === 'global') rows.push({ ...this.inlineDraft, key: 'draft', draft: true })
       return rows
@@ -204,14 +199,18 @@ export default {
       this.inlineDraft = { suffix: String(id).slice(3), rule: '' }
     },
     saveInlineRule() {
-      if (!/^\d{4}$/.test(this.inlineDraft.suffix)) return this.$message.error('规则 ID 后四位需要填写数字')
-      const id = Number(`100${this.inlineDraft.suffix}`)
+      if (!this.inlineDraft.editingId && !/^\d{4}$/.test(this.inlineDraft.suffix)) return this.$message.error('规则 ID 后四位需要填写数字')
+      const id = this.inlineDraft.editingId || Number(`100${this.inlineDraft.suffix}`)
+      if (this.inlineDraft.editingId && !this.customRules.some(entry => entry.id === id)) return this.$message.error('待编辑规则已不存在')
       const rule = replaceRuleId(this.inlineDraft.rule.trim(), id)
       if (!rule) return this.$message.error('规则内容需要包含 id 动作')
       const item = { id, rule }
-      const error = validateCustomRules([...this.customRules, item])
+      const current = this.customRules.filter(entry => entry.id !== this.inlineDraft.editingId)
+      const error = validateCustomRules([...current, item])
       if (error) return this.$message.error(error)
-      this.customRules.push(item)
+      this.customRules = this.inlineDraft.editingId
+        ? this.customRules.map(entry => entry.id === id ? { ...entry, ...item } : entry)
+        : [...this.customRules, item]
       this.inlineDraft = null
     },
     addCondition() {
@@ -224,33 +223,23 @@ export default {
     },
     resetEditor() {
       this.editingKey = ''
-      this.newRule = ''
       this.visualForm = { id: this.nextRuleId(), type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] }
     },
     editRule(record) {
-      this.editingKey = record.key
-      this.newRule = record.rule
-      const form = record.source === 'visual' ? parseVisualRule(record.rule) : null
+      if (this.inlineDraft) return
+      const form = parseVisualRule(record.rule)
       if (form) {
+        this.editingKey = record.key
         this.visualForm = form
-        this.editorMode = 'visual'
       } else {
-        this.visualForm.id = record.id
-        this.editorMode = 'manual'
+        this.resetEditor()
+        this.inlineDraft = { editingId: record.id, rule: record.rule }
       }
     },
     addRule() {
       let item
-      if (this.editorMode === 'visual') {
-        try { item = buildVisualRule(this.visualForm) }
-        catch (error) { return this.$message.error(error.message) }
-      } else {
-        const id = Number(this.visualForm.id)
-        if (!Number.isSafeInteger(id) || id < 1000000) return this.$message.error('规则 ID 必须从 1000000 开始')
-        const rule = replaceRuleId(this.newRule.trim(), id)
-        if (parseRuleId(rule) !== id) return this.$message.error('手填 SecRule 首条规则需要包含 id 动作')
-        item = { id, rule }
-      }
+      try { item = buildVisualRule(this.visualForm) }
+      catch (error) { return this.$message.error(error.message) }
       const current = this.customRules.filter(rule => `rule-${rule.id}` !== this.editingKey)
       const error = validateCustomRules([...current, item])
       if (error) return this.$message.error(error)
