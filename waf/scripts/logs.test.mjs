@@ -1,15 +1,33 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { fetchWafLogs, metricsInstalled } from '../src/logs.mjs'
+import { fetchWafLogs, openTrafficInstall, trafficInstalled } from '../src/logs.mjs'
 
-test('metrics presence follows the panel AppGroup check', async () => {
-  const path = '/apis/w7panel.w7.com/v1alpha1/namespaces/default/appgroups/w7panel-metrics'
-  assert.equal(await metricsInstalled({ k8sproxy: async value => {
+test('traffic plugin presence follows the installed AppGroups', async () => {
+  const path = '/apis/w7panel.w7.com/v1alpha1/namespaces/default/appgroups'
+  const group = { metadata: { name: 'metrics-traffic-wijvhtpk' }, spec: { identifie: 'metrics_traffic' } }
+  assert.equal(await trafficInstalled({ k8sproxy: async value => {
     assert.equal(value, path)
-    return { ok: true, json: async () => ({ metadata: { name: 'w7panel-metrics' } }) }
+    return { ok: true, json: async () => ({ items: [{ metadata: { name: 'w7panel-metrics' } }, group] }) }
   } }), true)
-  assert.equal(await metricsInstalled({ k8sproxy: async () => ({ status: 404 }) }), false)
-  await assert.rejects(metricsInstalled({ k8sproxy: async () => ({ status: 403 }) }), /403/)
+  assert.equal(await trafficInstalled({ k8sproxy: async () => ({ ok: true, json: async () => ({ items: [{ metadata: { name: 'w7panel-metrics' } }] }) }) }), false)
+  await assert.rejects(trafficInstalled({ k8sproxy: async () => ({ ok: false, status: 403 }) }), /403/)
+})
+
+test('missing traffic plugin opens its market install page', async () => {
+  const originalFetch = globalThis.fetch
+  const urls = []
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, 'https://zm.w7.com/zpk-market/formula/list')
+    assert.equal(JSON.parse(options.body).tag, '监控插件')
+    return { ok: true, json: async () => ({ data: { list: [
+      { identify: 'metrics-audit', formula_url: 'https://example.test/audit' },
+      { identify: 'metrics_traffic', formula_url: 'https://example.test/traffic' },
+    ] } }) }
+  }
+  try {
+    await openTrafficInstall({ handles: { toStoreInstall: url => urls.push(url) } })
+    assert.deepEqual(urls, ['https://example.test/traffic'])
+  } finally { globalThis.fetch = originalFetch }
 })
 
 test('WAF log query is scoped to the current domain', async () => {

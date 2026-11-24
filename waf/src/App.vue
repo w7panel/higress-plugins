@@ -95,9 +95,9 @@
         </a-space>
       </a-tab-pane>
       <a-tab-pane key="logs" title="防护日志">
-        <a-spin v-if="checkingMetrics" tip="正在检查监控应用" />
+        <a-spin v-if="checkingMetrics" tip="正在检查流量监测应用" />
         <a-alert v-else-if="metricsError" type="error" class="scope-note">{{ metricsError }} <a-link @click="loadLogs">重试</a-link></a-alert>
-        <a-alert v-else-if="!hasMetrics" type="warning" class="scope-note">未安装面板监控，安装后可查看防护日志。</a-alert>
+        <a-alert v-else-if="!hasMetrics" type="warning" class="scope-note">未安装流量监测应用，安装后可查看防护日志。<a-link @click="installTraffic">去安装</a-link></a-alert>
         <template v-else>
           <a-alert type="info" class="scope-note">显示监控组件保存的最近一小时 WAF 拦截记录。</a-alert>
           <a-button :loading="loadingLogs" @click="loadLogs">刷新</a-button>
@@ -112,7 +112,7 @@
 <script>
 import { loadWafConfig, saveWafConfig } from './backend.mjs'
 import { buildVisualRule, parseRuleId, parseVisualRule, replaceRuleId, validateCustomRules } from './rules.mjs'
-import { fetchWafLogs, metricsInstalled } from './logs.mjs'
+import { fetchWafLogs, openTrafficInstall, trafficInstalled } from './logs.mjs'
 
 const clone = value => JSON.parse(JSON.stringify(value || {}))
 const props = () => window.$wujie?.props || {}
@@ -282,14 +282,19 @@ export default {
     async loadLogs() {
       this.checkingMetrics = true
       this.metricsError = ''
-      try { this.hasMetrics = await metricsInstalled(props()) }
-      catch (e) { this.metricsError = e?.message || '检查面板监控失败' }
+      this.hasMetrics = false
+      try { this.hasMetrics = await trafficInstalled(props()) }
+      catch (e) { this.metricsError = e?.message || '检查流量监测应用失败' }
       finally { this.checkingMetrics = false }
       if (!this.hasMetrics || this.metricsError) return
       this.loadingLogs = true
       try { this.logs = await fetchWafLogs(props(), this.scope === 'rule' ? this.domain : '') }
       catch (e) { this.$message.error(e?.message || '读取日志失败') }
       finally { this.loadingLogs = false }
+    },
+    async installTraffic() {
+      try { await openTrafficInstall(props()) }
+      catch (e) { this.$message.error(e?.message || '打开安装页面失败') }
     },
   },
 }
