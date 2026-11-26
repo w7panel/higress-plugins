@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,7 +23,7 @@ import (
 func PluginStart() {
 	wrapper.SetCtx(
 		"waf-plugin-go",
-		wrapper.ParseConfigBy(parseConfig),
+		wrapper.ParseConfigWithContext(parseConfig),
 		wrapper.ProcessRequestHeadersBy(onHttpRequestHeaders),
 		wrapper.ProcessRequestBodyBy(onHttpRequestBody),
 		wrapper.ProcessResponseBodyBy(onHttpResponseBody),
@@ -36,21 +37,35 @@ type WafConfig struct {
 	// tx  ctypes.Transaction
 }
 
-func parseConfig(json gjson.Result, config *WafConfig, log log.Log) error {
+type compiledWAF struct {
+	directives string
+	waf        coraza.WAF
+}
+
+func parseConfig(ctx wrapper.PluginContext, json gjson.Result, config *WafConfig) error {
+	// Reclaim previous rules and parser temporaries before another config is parsed.
+	runtime.GC()
 	directives, err := buildDirectives(json)
 	if err != nil {
 		return err
+	}
+	if cached, ok := ctx.GetContext("compiledWAF").(compiledWAF); ok && cached.directives == directives {
+		config.waf = cached.waf
+		return nil
 	}
 	conf := coraza.NewWAFConfig().
 		WithErrorCallback(logError).
 		WithDebugLogger(debuglog.DefaultWithPrinterFactory(logPrinterFactory)).
 		WithRootFS(root)
 	waf, err := coraza.NewWAF(conf.WithDirectives(directives))
-	config.waf = waf
 	if err != nil {
-		log.Errorf("Failed to create waf conf: %v", err)
+		proxywasm.LogErrorf("Failed to create waf conf: %v", err)
 		return errors.New("failed to create waf conf")
 	}
+	ctx.SetContext("compiledWAF", compiledWAF{directives: directives, waf: waf})
+	config.waf = waf
+	// Drop parser temporaries before the next configuration update.
+	runtime.GC()
 	return nil
 }
 

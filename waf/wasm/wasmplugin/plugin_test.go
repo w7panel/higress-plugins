@@ -42,6 +42,36 @@ func TestBuildDirectives(t *testing.T) {
 	}
 }
 
+type testPluginContext struct{ values map[string]interface{} }
+
+func (c *testPluginContext) SetContext(key string, value interface{}) { c.values[key] = value }
+func (c *testPluginContext) GetContext(key string) interface{} { return c.values[key] }
+func (*testPluginContext) EnableRuleLevelConfigIsolation() {}
+func (*testPluginContext) IsRuleLevelConfigIsolation() bool { return false }
+func (*testPluginContext) GetFingerPrint() string { return "" }
+func (*testPluginContext) DoLeaderElection() {}
+func (*testPluginContext) IsLeader() bool { return false }
+
+func TestParseConfigSharesIdenticalWAF(t *testing.T) {
+	ctx := &testPluginContext{values: map[string]interface{}{}}
+	var first, same, changed WafConfig
+	for _, test := range []struct {
+		json string
+		out *WafConfig
+	}{
+		{`{"useCRS":true}`, &first},
+		{`{"useCRS":true,"w7Policy":{"unrelated":true}}`, &same},
+		{`{"useCRS":true,"ruleStates":{"942100":false}}`, &changed},
+	} {
+		if err := parseConfig(ctx, gjson.Parse(test.json), test.out); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if first.waf != same.waf || first.waf == changed.waf {
+		t.Fatal("WAF reuse did not follow effective directives")
+	}
+}
+
 func TestEachCRSFileCompiles(t *testing.T) {
 	entries, err := fs.ReadDir(root, "@owasp_crs")
 	if err != nil {
