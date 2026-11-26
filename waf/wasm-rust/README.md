@@ -28,7 +28,7 @@ bash waf/skills/waf-envoy-test/scripts/test.sh waf/wasm-rust/target/wasm32-wasip
 
 ## 连续修改规则
 
-用 `python3 waf/wasm-rust/measure-reload.py <wasm 文件或镜像>` 在**同一 Envoy 容器**中，通过文件式 LDS 连续更新监听器 20 次，交替禁用、启用自定义规则。每轮请求均验证 `/waf-local-probe` 在 200 和 403 之间按配置切换；每轮生效后等待 1 秒读取容器 cgroup 的 `memory.current` 和 `memory.peak`。本地结果：
+用 `python3 waf/wasm-rust/measure-reload.py <wasm 文件或镜像> [轮数]` 在**同一 Envoy 容器**中，通过文件式 LDS 连续更新监听器，交替禁用、启用自定义规则，默认 20 轮。每轮请求均验证 `/waf-local-probe` 在 200 和 403 之间按配置切换；每轮生效后等待 1 秒读取容器 cgroup 的 `memory.current`、`memory.stat:anon`、`memory.peak`，以及 Envoy 的插件 WASM 线性内存和 VM 数量。原始 20 轮本地结果：
 
 | cgroup 内存 | Go | Rust |
 | --- | ---: | ---: |
@@ -37,7 +37,25 @@ bash waf/skills/waf-envoy-test/scripts/test.sh waf/wasm-rust/target/wasm32-wasip
 | 第 20 次更新后 `memory.current` | 652.2 MiB | 304.8 MiB |
 | 20 次更新期间 `memory.peak` | 658.1 MiB | 309.7 MiB |
 
-**结论：**这 20 次规则更新没有观察到逐轮累积；两版都在首次更新后跃升，随后形成稳定高水位。`memory.current` 包含 Envoy、WASM 运行时和 cgroup 文件缓存，不能据此断言旧规则对象完全释放，也不能把首次跃升归因于 Rust 引擎。长时间运行、高并发请求和生产配置仍需另测。
+**结论：**这 20 次规则更新没有观察到逐轮累积；两版都在首次更新后跃升，随后形成稳定高水位。`memory.current` 包含 Envoy、WASM 运行时和 cgroup 文件缓存，不能据此断言旧规则对象完全释放，也不能把首次跃升归因于 Rust 引擎。
+
+### Rust 累积问题复查
+
+用 218 集群相同的 Rust 镜像 `w7panel-waf:rust-route-20261126a` 再做 100 轮 LDS 更新，每轮规则均按预期生效。以下是**一次独立运行**的取样，单位 MiB：
+
+| 轮次 | `memory.current` | `memory.stat:anon` | `memory.peak` |
+| ---: | ---: | ---: | ---: |
+| 初次加载 | 206.7 | 204.7 | 211.8 |
+| 1 | 298.2 | 295.6 | 302.5 |
+| 20 | 297.5 | 295.2 | 302.6 |
+| 40 | 310.8 | 295.2 | 315.7 |
+| 60 | 310.8 | 295.2 | 315.9 |
+| 80 | 311.0 | 295.3 | 315.9 |
+| 100 | 311.3 | 295.2 | 316.0 |
+
+首次更新使匿名内存增加约 91 MiB，此后第 1–100 轮的匿名内存在 293.0–295.6 MiB 之间。`memory.current` 后续增加约 13 MiB，但没有对应的匿名内存增长，因此不能把容器总量的增量直接算成 Rust 堆泄漏。另一次 20 轮运行中，第 1–20 轮的 Envoy `wasmtest` 线性内存总量保持在 190.9 MiB，活跃 WASM VM 数保持为 4，已创建 VM 数从初次加载的 5 变为 6 后不再增加。初次加载时该插件的 `memory_size` 指标仍报 0，即未反映已加载的实例内存，不能将其当成有效基线；脚本在此时留空该列。
+
+代码路径上，`Root::on_configure` 用新的 `Rc<Policies>` 替换旧配置；正在处理的请求可以暂时持有旧 `Rc`，请求上下文结束后 SDK 会移除上下文。没有发现把历次规则保存在 Rust 插件全局集合中的路径。WASM 线性内存扩容后不会缩小，释放的分配可以留在已扩容的内存中供后续重用。因此目前证据支持“首次重编译抬高内存高水位，随后趋稳”，**没有观察到按更新次数持续累积的匿名内存**；它不能证明上游规则引擎没有较小的泄漏，也不能覆盖长连接和更复杂规则的情形。
 
 ## 218 集群对照（2026-11-26）
 
@@ -52,4 +70,4 @@ Higress Gateway 的两个独立 Ingress 分别绑定 `w7panel-pluginwaf`（Go）
 | XSS，500 次、并发 20 | 140.3 / 168.3 ms | 326.9 / 68.6 ms |
 | POST 表单 SQLi，500 次、并发 20 | 158.0 / 161.4 ms | 334.9 / 132.4 ms |
 
-Envoy `wasm.envoy.wasm.runtime.v8.plugin.*.memory_size` 的主线程加两个 worker：压测前 Go 312.0 MiB、Rust 103.5 MiB；全部请求压测后 Go 344.0 MiB、Rust 107.1 MiB。连续替换自定义规则且逐轮验证新规则生效后，Go 第 20 次为 396.0 MiB，期间在 308–436 MiB 波动；Rust首次更新后 196.1 MiB，第 20 次 220.8 MiB，第 40 次 223.1 MiB。Rust 的首次重编译有约 89 MiB 跃升，随后趋缓。该指标是 WASM 线性内存大小，不是插件 RSS；它能显示高水位增长，不能单独证明对象泄漏或回收。两插件同驻一个网关，容器总内存不能按插件拆分。
+Envoy `wasm.envoy.wasm.runtime.v8.plugin.*.memory_size` 的主线程加两个 worker：压测前 Go 312.0 MiB、Rust 103.5 MiB；全部请求压测后 Go 344.0 MiB、Rust 107.1 MiB。连续替换自定义规则且逐轮验证新规则生效后，Go 第 20 次为 396.0 MiB，期间在 308–436 MiB 波动；Rust 首次更新后 196.1 MiB，第 20 次 220.8 MiB，第 40 次 223.1 MiB。Rust 的首次重编译有约 89 MiB 跃升，随后趋缓。该指标是 WASM 线性内存大小，不是插件 RSS；它能显示高水位增长，不能单独证明对象泄漏或回收。两插件同驻一个网关，容器总内存不能按插件拆分。
