@@ -1,8 +1,8 @@
 <template>
   <main class="waf-page">
-    <div class="crs-config"><span>防护模式</span>
+    <div class="crs-config"><span>防护开关</span>
       <a-select v-if="scope === 'global'" v-model="globalProtectionMode" style="width: 190px"><a-option value="disabled">禁用</a-option><a-option value="custom">开启自定义配置</a-option><a-option value="observe">仅观察</a-option></a-select>
-      <a-select v-else :model-value="overrideProtectionMode" style="width: 190px" @change="setProtectionMode"><a-option value="inherit">跟随全局</a-option><a-option value="disabled">禁用</a-option><a-option value="custom">开启自定义配置</a-option><a-option value="observe">仅观察</a-option></a-select>
+      <a-select v-else :model-value="overrideProtectionMode" style="width: 190px" @change="setProtectionMode"><a-option value="inherit">跟随全局配置</a-option><a-option value="disabled">禁用</a-option><a-option value="custom">开启自定义配置</a-option><a-option value="observe">仅观察</a-option></a-select>
     </div>
     <div class="crs-config"><span>防护强度</span><a-select v-model="paranoiaLevel" :disabled="scope === 'rule' && overrideProtectionMode === 'inherit'" style="width: 150px"><a-option v-for="(name, index) in ['平衡', '增强', '严格', '极限']" :key="index" :value="index + 1">{{ name }}（PL{{ index + 1 }}）</a-option></a-select></div>
     <p class="rule-hint">{{ ['极少误报，绝大多数业务、新手、多站点托管，生产首选。', '少量误报，安全要求偏高、能接受少量自定义调整。', '较多误报，高安全业务（金融、内部系统）。', '大量误报，极高安全隔离环境，上线前必须大量白名单豁免。'][paranoiaLevel - 1] }}</p>
@@ -13,11 +13,6 @@
           <span>启用 OWASP CRS 系统规则</span>
         </div>
         <p class="rule-hint">关闭后不加载整套 CRS，下面的类别设置暂不生效；自定义 SecRule 仍然生效。开启 CRS 会增加网关内存占用。</p>
-        <div class="crs-config">
-          <a-switch :model-value="effectiveRequestBodyAccess" :disabled="scope === 'rule' && overrideProtectionMode === 'inherit'" @change="setRequestBodyAccess" />
-          <span>启用自定义规则的请求体检查</span>
-        </div>
-        <p class="rule-hint">使用 REQUEST_BODY 或 POST 表单参数等请求体变量时开启；网关将读取请求体，可能增加内存占用。关闭不会改变 CRS 自身的请求体配置。</p>
           <a-table :columns="systemColumns" :data="categories" :pagination="false" :expandable="{}" row-key="name">
           <template #expand-row="{ record }">
             <a-table :columns="ruleColumns" :data="categoryRules(record.name)" :pagination="false" row-key="id">
@@ -32,6 +27,11 @@
         </a-table>
       </a-tab-pane>
       <a-tab-pane key="custom" title="自定义规则">
+        <div class="crs-config">
+          <a-switch :model-value="effectiveRequestBodyAccess" :disabled="scope === 'rule' && overrideProtectionMode === 'inherit'" @change="setRequestBodyAccess" />
+          <span>读取请求体供自定义规则使用</span>
+        </div>
+        <p class="rule-hint">规则使用 REQUEST_BODY 或 POST 表单参数时开启；读取请求体可能增加内存占用，不改变 CRS 自身的配置。</p>
         <a-button v-if="scope === 'global'" :disabled="!!inlineDraft" @click="startInlineAdd">添加规则</a-button>
         <a-table :columns="customColumns" :data="visibleRules" :pagination="false" row-key="key">
           <template #id="{ record }"><span v-if="record.draft" class="id-entry"><strong v-if="inlineDraft.editingId">{{ inlineDraft.editingId }}</strong><template v-else><strong>100</strong><a-input v-model="inlineDraft.suffix" :max-length="4" placeholder="后四位" /></template></span><span v-else>{{ record.id }}</span></template>

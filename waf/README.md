@@ -21,7 +21,7 @@
 
 “启用 OWASP CRS 系统规则”对应 `useCRS`：开启时加载整套 CRS，关闭时不加载 CRS，但仍执行自定义 `SecRule`。全局开关是域名规则的默认值；域名可覆盖，也可恢复继承。关闭 CRS 会让类别设置暂不生效，可降低网关内存占用。
 
-使用 `REQUEST_BODY` 或 POST 表单参数等请求体变量时，打开“启用自定义规则的请求体检查”。MicroApp 会在自定义规则前写入 `SecRequestBodyAccess On`；域名可覆盖全局设置。此开关默认关闭，开启会让网关读取请求体，可能增加内存占用。仅添加 phase 2 `SecRule` 不会自动启用请求体读取；`useCRS: false` 不影响这个开关。更新前端后，需重新保存对应配置才会改写已下发的 WasmPlugin。
+使用 `REQUEST_BODY` 或 POST 表单参数等请求体变量时，在“自定义规则”页打开“读取请求体供自定义规则使用”。MicroApp 会在自定义规则前写入 `SecRequestBodyAccess On`；域名可覆盖全局设置。此开关默认关闭，开启会让网关读取请求体，可能增加内存占用。仅添加 phase 2 `SecRule` 不会自动启用请求体读取；`useCRS: false` 不影响这个开关。更新前端后，需重新保存对应配置才会改写已下发的 WasmPlugin。
 
 宿主通过 `window.$wujie.props` 提供 `configScope`、`domain`、`namespace`、`ingressName`、`k8sproxy`、`panelProxy`、`handles.toStoreInstall` 和 `refreshPluginConfig()`。MicroApp 在浏览器内校验、继承、编译策略，通过宿主 `k8sproxy` 以当前用户权限直接读写 WasmPlugin JSON（Kubernetes YAML 资源）。保存时保留 `metadata.resourceVersion`，并发修改由 Kubernetes 拒绝。域名配置还需能读取相应 Ingress。自定义 SecRule 由前端检查格式和 ID，完整语法仍由网关加载时检验。防护日志检查 `default` 下是否已安装 `metrics-traffic` AppGroup；未安装时可从应用市场跳转安装。已安装时经面板通用 Service 代理访问 `default/metrics-traffic:8080` 的 `/api/v1/traffic/waf-logs`，查询 metrics-traffic 保存于 VictoriaLogs 的最近一小时拦截记录。
 
