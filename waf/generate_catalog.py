@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate the UI catalog from the exact CRS files embedded in the Wasm."""
 import argparse
+from collections import Counter, defaultdict
 import json
 import re
 from pathlib import Path
@@ -62,7 +63,8 @@ def catalog():
             result.append({'id': rule_id, 'file': path.name, 'category': number,
                            'message': msg.group(1) if msg else '',
                            'paranoiaLevel': int(pl.group(1)) if pl else None,
-                           'internal': number in CORE})
+                           'internal': number in CORE,
+                           '_target': directive.split()[1] if directive.startswith('SecRule ') else ''})
     if not result:
         raise ValueError('no CRS rules found')
     return result
@@ -77,8 +79,18 @@ def main():
     ids = {str(row['id']) for row in rules}
     if set(names) != ids or any(not isinstance(names[id], str) or not re.search(r'[\u4e00-\u9fff]', names[id]) for id in ids):
         raise ValueError(f'Chinese names do not match CRS IDs; missing={sorted(ids-set(names))}, stale={sorted(set(names)-ids)}')
+    duplicates = Counter(names[str(row['id'])] for row in rules if row['message'] and not row['internal'])
+    targets = defaultdict(Counter)
     for row in rules:
-        row['nameZh'] = names[str(row['id'])]
+        targets[names[str(row['id'])]][row['_target']] += 1
+    for row in rules:
+        name = names[str(row['id'])]
+        target = row.pop('_target')
+        if duplicates[name] > 1:
+            if not target or targets[name][target] != 1:
+                raise ValueError(f'rule {row["id"]} needs a distinct semantic Chinese name: {name}')
+            name += f'（{target}）'
+        row['nameZh'] = name
     files = [{'name': name, 'titleZh': GROUPS[int(name.split('-', 2)[1])]}
              for name in sorted({row['file'] for row in rules if not row['internal']})]
     output = json.dumps({'crsVersion': VERSION, 'files': files, 'rules': rules}, ensure_ascii=False, indent=2) + '\n'

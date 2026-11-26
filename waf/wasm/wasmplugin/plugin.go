@@ -71,19 +71,7 @@ func buildDirectives(json gjson.Result) (string, error) {
 		return "", fmt.Errorf("invalid paranoia level %d", level)
 	}
 	if json.Get("useCRS").Bool() {
-		selected := make(map[string]bool)
-		files := json.Get("ruleFiles")
-		if files.Exists() {
-			if !files.IsArray() {
-				return "", errors.New("ruleFiles must be an array")
-			}
-			for _, item := range files.Array() {
-				if item.Type != gjson.String {
-					return "", errors.New("ruleFiles must contain file names")
-				}
-				selected[item.String()] = true
-			}
-		}
+		categories := json.Get("categories")
 		entries, err := fs.ReadDir(root, "@owasp_crs")
 		if err != nil {
 			return "", err
@@ -100,15 +88,22 @@ func buildDirectives(json gjson.Result) (string, error) {
 				available = append(available, name)
 			}
 		}
-		for name := range selected {
-			if !isDetectionFile(name) || !contains(available, name) {
-				return "", fmt.Errorf("unknown CRS rule file %q", name)
+		if categories.Exists() {
+			if !categories.IsObject() {
+				return "", errors.New("categories must be an object")
+			}
+			for name, enabled := range categories.Map() {
+				file := name + ".conf"
+				if !isDetectionFile(file) || !contains(available, file) || enabled.Type != gjson.True && enabled.Type != gjson.False {
+					return "", fmt.Errorf("invalid CRS category %q", name)
+				}
 			}
 		}
 		sort.Strings(available)
 		activeIDs := make(map[string]bool)
+		knownIDs := make(map[string]bool)
 		for _, name := range available {
-			if !isDetectionFile(name) || files.Exists() && !selected[name] {
+			if !isDetectionFile(name) {
 				continue
 			}
 			content, err := fs.ReadFile(root, "@owasp_crs/"+name)
@@ -120,7 +115,10 @@ func buildDirectives(json gjson.Result) (string, error) {
 					continue
 				}
 				if match := crsRuleID.FindStringSubmatch(line); len(match) == 2 {
-					activeIDs[match[1]] = true
+					knownIDs[match[1]] = true
+					if categoryActive(name, categories) {
+						activeIDs[match[1]] = true
+					}
 				}
 			}
 		}
@@ -142,16 +140,44 @@ func buildDirectives(json gjson.Result) (string, error) {
 				}
 				continue
 			}
-			if isRequiredFile(name) || !files.Exists() || selected[name] {
+			if isRequiredFile(name) || categoryActive(name, categories) {
 				secRules = append(secRules, "Include @owasp_crs/"+name)
 			}
 		}
+		states := json.Get("ruleStates")
+		if states.Exists() {
+			if !states.IsObject() {
+				return "", errors.New("ruleStates must be an object")
+			}
+			for id, enabled := range states.Map() {
+				if !enabled.Bool() {
+					if _, err := strconv.Atoi(id); err != nil || !knownIDs[id] {
+						return "", fmt.Errorf("invalid CRS rule ID %q", id)
+					}
+					if activeIDs[id] {
+						secRules = append(secRules, "SecRuleRemoveById "+id)
+					}
+				}
+			}
+		}
 	}
-	value := json.Get("secRules")
-	if value.Exists() {
-		for _, item := range value.Array() {
-			rule := item.String()
-			secRules = append(secRules, rule)
+	if json.Get("requestBodyAccess").Bool() {
+		secRules = append(secRules, "SecRequestBodyAccess On")
+	}
+	custom := json.Get("customRules")
+	if custom.Exists() {
+		if !custom.IsArray() {
+			return "", errors.New("customRules must be an array")
+		}
+		for _, item := range custom.Array() {
+			rule := item.Get("rule")
+			if rule.Type != gjson.String {
+				return "", errors.New("customRules must contain rules")
+			}
+			if !item.Get("enabled").Bool() {
+				continue
+			}
+			secRules = append(secRules, rule.String())
 		}
 	}
 	secRules = append(secRules, "SecRuleEngine "+mode)
@@ -159,6 +185,13 @@ func buildDirectives(json gjson.Result) (string, error) {
 }
 
 var crsRuleID = regexp.MustCompile(`(?i)\bid\s*:\s*(\d+)`)
+
+func categoryActive(name string, categories gjson.Result) bool {
+	if category := categories.Get(strings.TrimSuffix(name, ".conf")); category.Exists() {
+		return category.Bool()
+	}
+	return true
+}
 
 func contains(items []string, wanted string) bool {
 	for _, item := range items {
@@ -452,7 +485,7 @@ func onHttpStreamDone(ctx wrapper.HttpContext, config WafConfig, log log.Log) {
 		return
 	}
 
-	if !tx.IsRuleEngineOff() {
+	if !tx.IsRuleEngineOff() && !ctx.GetBoolContext("interruptionHandled", false) {
 		// Responses without body won't call OnHttpResponseBody, but there are rules in the response body
 		// phase that still need to be executed. If they haven't been executed yet, now is the time.
 		if !ctx.GetBoolContext("processedResponseBody", false) {

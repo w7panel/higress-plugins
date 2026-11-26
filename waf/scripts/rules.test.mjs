@@ -11,7 +11,12 @@ test('CRS catalog files match generated rule inventory', () => {
   assert.equal(new Set(catalog.files.map(item => item.name)).size, catalog.files.length)
   assert.equal(new Set(catalog.rules.map(item => item.id)).size, catalog.rules.length)
   const files = new Set(catalog.files.map(item => item.name))
-  for (const rule of catalog.rules.filter(item => !item.internal)) assert.ok(files.has(rule.file))
+  const visibleRules = catalog.rules.filter(item => !item.internal && item.message)
+  assert.equal(new Set(visibleRules.map(item => item.nameZh)).size, visibleRules.length)
+  for (const rule of visibleRules) {
+    assert.ok(files.has(rule.file))
+    assert.doesNotMatch(rule.nameZh, /（规则 \d+/)
+  }
 })
 
 test('custom rules require a unique ID outside the CRS range', () => {

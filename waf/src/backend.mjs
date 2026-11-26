@@ -2,8 +2,9 @@ import catalog from '../system-rules.json' with { type: 'json' }
 import { validateCustomRules } from './rules.mjs'
 
 const pluginPath = '/apis/extensions.higress.io/v1alpha1/namespaces/higress-system/wasmplugins/w7panel-pluginwaf'
-const files = new Set(catalog.files.map(file => file.name))
-const detectionFiles = new Map(catalog.rules.filter(rule => !rule.internal && rule.message).map(rule => [rule.id, rule.file]))
+const files = new Set(catalog.files.map(file => file.name.replace(/\.conf$/, '')))
+const detectionFiles = new Map(catalog.rules.filter(rule => !rule.internal && rule.message).map(rule => [rule.id, rule.file.replace(/\.conf$/, '')]))
+const uiCatalog = { ...catalog, files: catalog.files.map(file => ({ ...file, name: file.name.replace(/\.conf$/, '') })), rules: catalog.rules.map(rule => ({ ...rule, file: rule.file.replace(/\.conf$/, '') })) }
 
 function context(props) {
   const scope = props.configScope === 'rule' ? 'rule' : 'global'
@@ -29,6 +30,7 @@ function globalConfig(plugin) {
   const config = plugin.spec?.defaultConfig || {}
   const global = policy(config.w7Policy)
   if (global.useCRS == null) global.useCRS = config.useCRS === true
+  if (!global.protectionMode) global.protectionMode = 'disabled'
   return { config, global }
 }
 const findRule = (rules, target) => rules.findIndex(rule => rule.ingress?.includes(target))
@@ -38,28 +40,24 @@ export function compile(global, overrides) {
     for (const name of Object.keys(entry.categories || {})) if (!files.has(name)) throw new Error(`未知 CRS 规则文件：${name}`)
     for (const id of Object.keys(entry.ruleStates || {})) if (!detectionFiles.has(Number(id))) throw new Error(`未知 CRS 规则 ID：${id}`)
   }
-  if (global.engineMode && !['On', 'Off', 'DetectionOnly'].includes(global.engineMode)) throw new Error('规则引擎模式无效')
-  if (global.paranoiaLevel && ![1, 2, 3, 4].includes(global.paranoiaLevel)) throw new Error('规则严格度必须为 PL1–PL4')
+  if (!['disabled', 'custom', 'observe'].includes(global.protectionMode || 'disabled')) throw new Error('全局防护开关无效')
+  if (overrides && !['disabled', 'custom', 'observe', 'inherit'].includes(overrides.protectionMode || 'inherit')) throw new Error('域名防护开关无效')
+  if (global.paranoiaLevel && ![1, 2, 3, 4].includes(global.paranoiaLevel)) throw new Error('防护强度无效')
+  if (overrides?.paranoiaLevel && ![1, 2, 3, 4].includes(overrides.paranoiaLevel)) throw new Error('域名防护强度无效')
   const ruleError = validateCustomRules(global.customRules || [])
   if (ruleError) throw new Error(ruleError)
   if (overrides) {
-    if (overrides.customRules?.length || overrides.engineMode || overrides.paranoiaLevel) throw new Error('域名只能继承或禁用全局规则')
+    if (overrides.customRules?.length) throw new Error('自定义规则只能在全局添加')
     const ids = new Set((global.customRules || []).map(rule => rule.id))
-    for (const id of overrides.disabledGlobalIds || []) if (!ids.has(id)) throw new Error(`未知全局自定义规则 ID：${id}`)
+    for (const id of overrides.enabledGlobalIds || []) if (!ids.has(id)) throw new Error(`未知全局自定义规则 ID：${id}`)
   }
-  const useCRS = overrides?.useCRS ?? global.useCRS ?? true
-  const active = new Map(catalog.files.map(file => [file.name, global.categories?.[file.name] !== false]))
-  for (const [name, enabled] of Object.entries(overrides?.categories || {})) active.set(name, enabled)
-  const ruleFiles = [...active].filter(([, enabled]) => enabled).map(([name]) => name).sort()
-  const states = { ...global.ruleStates, ...overrides?.ruleStates }
-  const secRules = []
-  if (overrides?.requestBodyAccess ?? global.requestBodyAccess ?? false) secRules.push('SecRequestBodyAccess On')
-  if (useCRS) {
-    for (const id of Object.keys(states).map(Number).filter(id => states[id] === false && active.get(detectionFiles.get(id))).sort((a, b) => a - b)) secRules.push(`SecRuleRemoveById ${id}`)
-  }
-  const disabled = new Set(overrides?.disabledGlobalIds || [])
-  for (const rule of global.customRules || []) if (!disabled.has(rule.id)) secRules.push(rule.rule.trim())
-  return { useCRS, ruleFiles, secRules, engineMode: global.engineMode || 'On', paranoiaLevel: global.paranoiaLevel || 1 }
+  const inherit = overrides && (overrides.protectionMode || 'inherit') === 'inherit'
+  const selected = !overrides || inherit ? global : overrides
+  const categories = { ...(inherit || !overrides ? global.categories : { ...global.categories, ...overrides.categories }) }
+  const ruleStates = { ...(inherit || !overrides ? global.ruleStates : { ...global.ruleStates, ...overrides.ruleStates }) }
+  const ids = new Set(overrides && !inherit ? overrides.enabledGlobalIds || [] : (global.customRules || []).filter(rule => rule.enabled === true).map(rule => rule.id))
+  const customRules = (global.customRules || []).filter(rule => ids.has(rule.id)).map(rule => ({ id: rule.id, rule: rule.rule.trim(), enabled: true }))
+  return { useCRS: selected.useCRS ?? global.useCRS ?? true, categories, ruleStates, customRules, requestBodyAccess: selected.requestBodyAccess ?? global.requestBodyAccess ?? false, engineMode: selected.protectionMode === 'observe' ? 'DetectionOnly' : 'On', paranoiaLevel: selected.paranoiaLevel || global.paranoiaLevel || 1 }
 }
 
 export async function loadWafConfig(props) {
@@ -70,8 +68,9 @@ export async function loadWafConfig(props) {
   const rules = plugin.spec?.matchRules || []
   const config = rules[findRule(rules, target)]?.config || {}
   const overrides = policy(config.w7Overrides)
-  if (scope === 'rule' && !config.w7Overrides && typeof config.useCRS === 'boolean' && config.useCRS !== global.useCRS) overrides.useCRS = config.useCRS
-  return { global, overrides, catalog }
+  if (!overrides.protectionMode) overrides.protectionMode = 'inherit'
+  if (!overrides.enabledGlobalIds) overrides.enabledGlobalIds = []
+  return { global, overrides, catalog: uiCatalog }
 }
 
 export async function saveWafConfig(props, input) {
@@ -85,17 +84,23 @@ export async function saveWafConfig(props, input) {
     const global = policy(input)
     if (global.useCRS == null) global.useCRS = config.useCRS === true
     Object.assign(config, compile(global), { w7Policy: global })
+    for (const key of ['ruleFiles', 'secRules']) delete config[key]
     delete config.w7LegacyRules
     spec.defaultConfig = config
+    spec.defaultConfigDisable = global.protectionMode === 'disabled'
     for (const rule of rules) {
       if (!rule.config?.w7Overrides) continue
       const overrides = policy(rule.config.w7Overrides)
       const known = new Set((global.customRules || []).map(item => item.id))
-      overrides.disabledGlobalIds = (overrides.disabledGlobalIds || []).filter(id => known.has(id))
+      overrides.enabledGlobalIds = (overrides.enabledGlobalIds || []).filter(id => known.has(id))
+      if (!overrides.protectionMode) overrides.protectionMode = 'inherit'
       Object.assign(rule.config, compile(global, overrides), { w7Overrides: overrides })
+      for (const key of ['ruleFiles', 'secRules']) delete rule.config[key]
+      rule.configDisable = (overrides.protectionMode === 'inherit' ? global.protectionMode : overrides.protectionMode) === 'disabled'
     }
   } else {
     const overrides = policy(input)
+    if (!overrides.protectionMode) overrides.protectionMode = 'inherit'
     const compiled = compile(savedGlobal, overrides)
     let index = findRule(rules, target)
     if (index < 0) {
@@ -117,7 +122,8 @@ export async function saveWafConfig(props, input) {
     }
     const rule = rules[index]
     rule.config = { ...rule.config, ...compiled, w7Overrides: overrides }
-    rule.configDisable = false
+    for (const key of ['ruleFiles', 'secRules']) delete rule.config[key]
+    rule.configDisable = (overrides.protectionMode === 'inherit' ? savedGlobal.protectionMode : overrides.protectionMode) === 'disabled'
   }
   await k8s(props, pluginPath, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(plugin) })
   await props.refreshPluginConfig?.()

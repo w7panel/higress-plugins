@@ -598,7 +598,7 @@
       "message": "Attempted multipart/form-data bypass",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "multipart/form-data 格式绕过"
+      "nameZh": "multipart/form-data 格式绕过（FILES|FILES_NAMES）"
     },
     {
       "id": 920160,
@@ -724,7 +724,7 @@
       "message": "Request Has an Empty Accept Header",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Accept 请求头为空"
+      "nameZh": "Accept 请求头为空且 User-Agent 非常见客户端"
     },
     {
       "id": 920311,
@@ -733,7 +733,7 @@
       "message": "Request Has an Empty Accept Header",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Accept 请求头为空"
+      "nameZh": "Accept 请求头为空且缺少 User-Agent"
     },
     {
       "id": 920330,
@@ -895,7 +895,7 @@
       "message": "HTTP header is restricted by policy (%{MATCHED_VAR})",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "使用受限 HTTP 请求头"
+      "nameZh": "使用基础策略禁止的 HTTP 请求头"
     },
     {
       "id": 920520,
@@ -1021,7 +1021,7 @@
       "message": "Attempted multipart/form-data bypass",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "multipart/form-data 格式绕过"
+      "nameZh": "multipart/form-data 格式绕过（FILES_NAMES|FILES）"
     },
     {
       "id": 920451,
@@ -1030,7 +1030,7 @@
       "message": "HTTP header is restricted by policy (%{MATCHED_VAR})",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "使用受限 HTTP 请求头"
+      "nameZh": "使用扩展策略禁止的 HTTP 请求头"
     },
     {
       "id": 920240,
@@ -1156,7 +1156,7 @@
       "message": "Invalid character in request headers (outside of very strict set)",
       "paranoiaLevel": 4,
       "internal": false,
-      "nameZh": "请求头包含严格字符集外的字符"
+      "nameZh": "请求头包含严格字符集外的字符（REQUEST_HEADERS|!REQUEST_HEADERS:User-Agent|!REQUEST_HEADERS:Referer|!REQUEST_HEADERS:Cookie|!REQUEST_HEADERS:Sec-Fetch-User|!REQUEST_HEADERS:Sec-CH-UA|!REQUEST_HEADERS:Sec-CH-UA-Mobile）"
     },
     {
       "id": 920275,
@@ -1165,7 +1165,7 @@
       "message": "Invalid character in request headers (outside of very strict set)",
       "paranoiaLevel": 4,
       "internal": false,
-      "nameZh": "请求头包含严格字符集外的字符"
+      "nameZh": "请求头包含严格字符集外的字符（REQUEST_HEADERS:Sec-Fetch-User|REQUEST_HEADERS:Sec-CH-UA-Mobile）"
     },
     {
       "id": 920460,
@@ -1210,7 +1210,7 @@
       "message": "HTTP Response Splitting Attack",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "HTTP 响应拆分"
+      "nameZh": "换行后注入响应头的 HTTP 响应拆分"
     },
     {
       "id": 921130,
@@ -1219,7 +1219,7 @@
       "message": "HTTP Response Splitting Attack",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "HTTP 响应拆分"
+      "nameZh": "注入 HTTP 状态行或 HTML 的响应拆分"
     },
     {
       "id": 921140,
@@ -1237,7 +1237,7 @@
       "message": "HTTP Header Injection Attack via payload (CR/LF detected)",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "请求载荷中的 CR/LF 头注入"
+      "nameZh": "请求载荷中的 CR/LF 头注入（ARGS_NAMES）"
     },
     {
       "id": 921160,
@@ -1273,7 +1273,7 @@
       "message": "Content-Type header: Dangerous content type outside the mime type declaration",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "MIME 声明外的危险 Content-Type"
+      "nameZh": "MIME 声明外出现 JSON 或 XML 类型"
     },
     {
       "id": 921240,
@@ -1318,7 +1318,7 @@
       "message": "HTTP Header Injection Attack via payload (CR/LF detected)",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "请求载荷中的 CR/LF 头注入"
+      "nameZh": "请求载荷中的 CR/LF 头注入（ARGS_GET）"
     },
     {
       "id": 921422,
@@ -1327,7 +1327,7 @@
       "message": "Content-Type header: Dangerous content type outside the mime type declaration",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "MIME 声明外的危险 Content-Type"
+      "nameZh": "MIME 声明外出现其他危险内容类型"
     },
     {
       "id": 921015,
@@ -1498,7 +1498,7 @@
       "message": "Path Traversal Attack (/../) or (/.../)",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "路径穿越（/../ 或 /.../）"
+      "nameZh": "原始请求中的编码路径穿越"
     },
     {
       "id": 930110,
@@ -1507,7 +1507,7 @@
       "message": "Path Traversal Attack (/../) or (/.../)",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "路径穿越（/../ 或 /.../）"
+      "nameZh": "解码后的点段路径穿越"
     },
     {
       "id": 930120,
@@ -1750,7 +1750,7 @@
       "message": "Remote Command Execution: Unix Command Injection (command without evasion)",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "未混淆的 Unix 命令注入"
+      "nameZh": "未混淆的 Unix 命令注入（基础命令集）"
     },
     {
       "id": 932120,
@@ -1777,7 +1777,7 @@
       "message": "Remote Command Execution: Unix Shell Expression Found",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Unix Shell 表达式注入"
+      "nameZh": "Unix Shell 命令替换或变量表达式注入"
     },
     {
       "id": 932140,
@@ -1795,7 +1795,7 @@
       "message": "Remote Command Execution: Unix Shell Expression Found",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Unix Shell 表达式注入"
+      "nameZh": "Unix Shell 历史路径表达式注入"
     },
     {
       "id": 932280,
@@ -1804,7 +1804,7 @@
       "message": "Remote Command Execution: Brace Expansion Found",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Shell 花括号展开注入"
+      "nameZh": "Shell 字母数字花括号展开注入"
     },
     {
       "id": 932250,
@@ -1813,7 +1813,7 @@
       "message": "Remote Command Execution: Direct Unix Command Execution",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "直接执行 Unix 命令"
+      "nameZh": "直接执行高危 Unix 命令"
     },
     {
       "id": 932260,
@@ -1822,7 +1822,7 @@
       "message": "Remote Command Execution: Direct Unix Command Execution",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "直接执行 Unix 命令"
+      "nameZh": "直接执行常见 Unix 系统工具"
     },
     {
       "id": 932340,
@@ -1831,7 +1831,7 @@
       "message": "Remote Command Execution: Direct Unix Command Execution (No Arguments)",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "无参数的 Unix 命令执行"
+      "nameZh": "无参数执行 Unix 命令（基础命令集）"
     },
     {
       "id": 932330,
@@ -1840,7 +1840,7 @@
       "message": "Remote Command Execution: Unix shell history invocation",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Unix Shell 历史命令调用"
+      "nameZh": "Unix Shell 数字历史命令调用"
     },
     {
       "id": 932160,
@@ -1858,7 +1858,7 @@
       "message": "Remote Command Execution: Shellshock (CVE-2014-6271)",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Shellshock 命令注入（CVE-2014-6271）"
+      "nameZh": "Shellshock 命令注入（CVE-2014-6271）（REQUEST_HEADERS|REQUEST_LINE）"
     },
     {
       "id": 932171,
@@ -1867,7 +1867,7 @@
       "message": "Remote Command Execution: Shellshock (CVE-2014-6271)",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Shellshock 命令注入（CVE-2014-6271）"
+      "nameZh": "Shellshock 命令注入（CVE-2014-6271）（ARGS_NAMES|ARGS|FILES_NAMES）"
     },
     {
       "id": 932175,
@@ -1894,7 +1894,7 @@
       "message": "Remote Command Execution: Windows Command Injection",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Windows 命令注入"
+      "nameZh": "Windows 系统管理命令注入"
     },
     {
       "id": 932380,
@@ -1903,7 +1903,7 @@
       "message": "Remote Command Execution: Windows Command Injection",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Windows 命令注入"
+      "nameZh": "Windows 网络与文件工具命令注入"
     },
     {
       "id": 932013,
@@ -1930,7 +1930,7 @@
       "message": "Remote Command Execution: Windows Command Injection",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "Windows 命令注入"
+      "nameZh": "Windows at 计划任务命令注入"
     },
     {
       "id": 932231,
@@ -1939,7 +1939,7 @@
       "message": "Remote Command Execution: Unix Command Injection",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "Unix 命令注入"
+      "nameZh": "Unix 命令注入（增强命令集）"
     },
     {
       "id": 932131,
@@ -1948,7 +1948,7 @@
       "message": "Remote Command Execution: Unix Shell Expression Found",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "Unix Shell 表达式注入"
+      "nameZh": "Unix Shell 表达式注入（REQUEST_HEADERS:User-Agent|REQUEST_HEADERS:Referer）"
     },
     {
       "id": 932200,
@@ -1966,7 +1966,7 @@
       "message": "RCE Bypass Technique",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "远程命令执行绕过手法"
+      "nameZh": "Referer 中的远程命令执行绕过前缀"
     },
     {
       "id": 932206,
@@ -1975,7 +1975,7 @@
       "message": "RCE Bypass Technique",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "远程命令执行绕过手法"
+      "nameZh": "Referer 路径中的远程命令执行绕过字符"
     },
     {
       "id": 932207,
@@ -1984,7 +1984,7 @@
       "message": "RCE Bypass Technique",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "远程命令执行绕过手法"
+      "nameZh": "Referer 片段中的远程命令执行绕过内容"
     },
     {
       "id": 932220,
@@ -2011,7 +2011,7 @@
       "message": "Remote Command Execution: Brace Expansion Found",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "Shell 花括号展开注入"
+      "nameZh": "Shell 含特殊字符的花括号展开注入"
     },
     {
       "id": 932210,
@@ -2029,7 +2029,7 @@
       "message": "Remote Command Execution: Unix Shell Expression Found",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "Unix Shell 表达式注入"
+      "nameZh": "Unix Shell 表达式注入（REQUEST_COOKIES|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/*|XML://@*）"
     },
     {
       "id": 932300,
@@ -2038,7 +2038,7 @@
       "message": "Remote Command Execution: SMTP Command Execution",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "SMTP 命令执行"
+      "nameZh": "SMTP 握手命令注入"
     },
     {
       "id": 932310,
@@ -2047,7 +2047,7 @@
       "message": "Remote Command Execution: IMAP Command Execution",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "IMAP 命令执行"
+      "nameZh": "IMAP 命令执行（REQUEST_FILENAME|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/*|XML://@*）"
     },
     {
       "id": 932320,
@@ -2056,7 +2056,7 @@
       "message": "Remote Command Execution: POP3 Command Execution",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "POP3 命令执行"
+      "nameZh": "POP3 命令执行（REQUEST_FILENAME|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/*|XML://@*）"
     },
     {
       "id": 932236,
@@ -2065,7 +2065,7 @@
       "message": "Remote Command Execution: Unix Command Injection (command without evasion)",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "未混淆的 Unix 命令注入"
+      "nameZh": "未混淆的 Unix 命令注入（扩展命令集）"
     },
     {
       "id": 932239,
@@ -2083,7 +2083,7 @@
       "message": "Remote Command Execution: Unix Shell Code Found in REQUEST_HEADERS",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "请求头中的 Unix Shell 代码"
+      "nameZh": "请求头中的 Unix Shell 代码（REQUEST_HEADERS:User-Agent|REQUEST_HEADERS:Referer）"
     },
     {
       "id": 932390,
@@ -2119,7 +2119,7 @@
       "message": "Remote Command Execution: Unix Command Injection",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "Unix 命令注入"
+      "nameZh": "Unix 命令注入（严格命令集）"
     },
     {
       "id": 932237,
@@ -2128,7 +2128,7 @@
       "message": "Remote Command Execution: Unix Shell Code Found in REQUEST_HEADERS",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "请求头中的 Unix Shell 代码"
+      "nameZh": "请求头中的 Unix Shell 代码（REQUEST_FILENAME|REQUEST_HEADERS:User-Agent|REQUEST_HEADERS:Referer）"
     },
     {
       "id": 932238,
@@ -2137,7 +2137,7 @@
       "message": "Remote Command Execution: Unix Shell Code Found in REQUEST_HEADERS",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "请求头中的 Unix Shell 代码"
+      "nameZh": "请求头中的 Unix Shell 代码（REQUEST_FILENAME|REQUEST_COOKIES|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/*|XML://@*|REQUEST_HEADERS:Referer|REQUEST_HEADERS:User-Agent）"
     },
     {
       "id": 932290,
@@ -2164,7 +2164,7 @@
       "message": "Remote Command Execution: Direct Unix Command Execution (No Arguments)",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "无参数的 Unix 命令执行"
+      "nameZh": "无参数执行 Unix 命令（严格命令集）"
     },
     {
       "id": 932301,
@@ -2173,7 +2173,7 @@
       "message": "Remote Command Execution: SMTP Command Execution",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "SMTP 命令执行"
+      "nameZh": "SMTP DATA 或 QUIT 命令注入"
     },
     {
       "id": 932311,
@@ -2182,7 +2182,7 @@
       "message": "Remote Command Execution: IMAP Command Execution",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "IMAP 命令执行"
+      "nameZh": "IMAP 命令执行（REQUEST_COOKIES|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/*|XML://@*）"
     },
     {
       "id": 932321,
@@ -2191,7 +2191,7 @@
       "message": "Remote Command Execution: POP3 Command Execution",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "POP3 命令执行"
+      "nameZh": "POP3 命令执行（REQUEST_COOKIES|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/*|XML://@*）"
     },
     {
       "id": 932331,
@@ -2200,7 +2200,7 @@
       "message": "Remote Command Execution: Unix shell history invocation",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "Unix Shell 历史命令调用"
+      "nameZh": "Unix Shell 非数字历史命令调用"
     },
     {
       "id": 932017,
@@ -2254,7 +2254,7 @@
       "message": "PHP Injection Attack: PHP Script File Upload Found",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "上传 PHP 脚本文件"
+      "nameZh": "上传 PHP 脚本文件扩展名"
     },
     {
       "id": 933120,
@@ -2443,7 +2443,7 @@
       "message": "PHP Injection Attack: PHP Script File Upload Found",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "上传 PHP 脚本文件"
+      "nameZh": "上传带双重扩展名的 PHP 脚本"
     },
     {
       "id": 933190,
@@ -2506,7 +2506,7 @@
       "message": "Node.js Injection Attack 1/2",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Node.js 注入（规则 1/2）"
+      "nameZh": "Node.js 动态代码执行注入"
     },
     {
       "id": 934110,
@@ -2569,7 +2569,7 @@
       "message": "Server-Side Template Injection (SSTI) Attack",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "服务端模板注入"
+      "nameZh": "服务端模板表达式注入"
     },
     {
       "id": 934013,
@@ -2596,7 +2596,7 @@
       "message": "Node.js Injection Attack 2/2",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "Node.js 注入（规则 2/2）"
+      "nameZh": "Node.js 文件与进程函数注入"
     },
     {
       "id": 934120,
@@ -2623,7 +2623,7 @@
       "message": "SSTI Attack",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "服务端模板注入"
+      "nameZh": "服务端模板控制标记注入"
     },
     {
       "id": 934220,
@@ -2713,7 +2713,7 @@
       "message": "XSS Attack Detected via libinjection",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "libinjection 识别的 XSS"
+      "nameZh": "libinjection 识别的 XSS（REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_HEADERS:User-Agent|ARGS_NAMES|ARGS|XML:/*|XML://@*）"
     },
     {
       "id": 941110,
@@ -2776,7 +2776,7 @@
       "message": "Node-Validator Deny List Keywords",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Node Validator 拒绝列表关键字"
+      "nameZh": "Node Validator 危险 JavaScript 关键字"
     },
     {
       "id": 941190,
@@ -2785,7 +2785,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：CSS 样式载荷"
     },
     {
       "id": 941200,
@@ -2794,7 +2794,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：VML Frame 标签"
     },
     {
       "id": 941210,
@@ -2812,7 +2812,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：VML 行为载荷"
     },
     {
       "id": 941230,
@@ -2821,7 +2821,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：EMBED 标签"
     },
     {
       "id": 941240,
@@ -2830,7 +2830,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：import 实现属性"
     },
     {
       "id": 941250,
@@ -2839,7 +2839,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：META http-equiv 属性"
     },
     {
       "id": 941260,
@@ -2848,7 +2848,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：META charset 属性"
     },
     {
       "id": 941270,
@@ -2857,7 +2857,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：LINK href 属性"
     },
     {
       "id": 941280,
@@ -2866,7 +2866,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：BASE href 属性"
     },
     {
       "id": 941290,
@@ -2875,7 +2875,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：APPLET 标签"
     },
     {
       "id": 941300,
@@ -2884,7 +2884,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：OBJECT 加载属性"
     },
     {
       "id": 941310,
@@ -2965,7 +2965,7 @@
       "message": "XSS Attack Detected via libinjection",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "libinjection 识别的 XSS"
+      "nameZh": "libinjection 识别的 XSS（REQUEST_FILENAME|REQUEST_HEADERS:Referer）"
     },
     {
       "id": 941150,
@@ -2983,7 +2983,7 @@
       "message": "Node-Validator Deny List Keywords",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "Node Validator 拒绝列表关键字"
+      "nameZh": "Node Validator HTML 注释结束标记"
     },
     {
       "id": 941320,
@@ -3001,7 +3001,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：location 跳转载荷"
     },
     {
       "id": 941340,
@@ -3010,7 +3010,7 @@
       "message": "IE XSS Filters - Attack Detected",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "IE XSS 过滤器识别的攻击"
+      "nameZh": "IE XSS 过滤器：对象属性赋值载荷"
     },
     {
       "id": 941380,
@@ -3082,7 +3082,7 @@
       "message": "SQL Injection Attack Detected via libinjection",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "libinjection 识别的 SQL 注入"
+      "nameZh": "libinjection 识别的 SQL 注入（REQUEST_COOKIES|REQUEST_COOKIES_NAMES|REQUEST_HEADERS:User-Agent|REQUEST_HEADERS:Referer|ARGS_NAMES|ARGS|XML:/*|XML://@*）"
     },
     {
       "id": 942140,
@@ -3100,7 +3100,7 @@
       "message": "SQL Injection Attack: SQL function name detected",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "SQL 函数名称注入"
+      "nameZh": "SQL 注入：基础 SQL 函数名称"
     },
     {
       "id": 942160,
@@ -3199,7 +3199,7 @@
       "message": "Detects MySQL and PostgreSQL stored procedure/function injections",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "MySQL/PostgreSQL 存储过程或函数注入"
+      "nameZh": "MySQL/PostgreSQL 存储过程或函数注入（REQUEST_COOKIES|REQUEST_COOKIES_NAMES|ARGS_NAMES|ARGS|XML:/*|XML://@*）"
     },
     {
       "id": 942350,
@@ -3217,7 +3217,7 @@
       "message": "Detects concatenated basic SQL injection and SQLLFI attempts",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "拼接式 SQL 注入或 SQL 本地文件包含"
+      "nameZh": "SQL 语句拼接与本地文件读取函数"
     },
     {
       "id": 942500,
@@ -3289,7 +3289,7 @@
       "message": "SQL Injection Attack: SQL Boolean-based attack detected",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "布尔条件 SQL 注入"
+      "nameZh": "SQL 布尔条件：相等与 LIKE 比较"
     },
     {
       "id": 942131,
@@ -3298,7 +3298,7 @@
       "message": "SQL Injection Attack: SQL Boolean-based attack detected",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "布尔条件 SQL 注入"
+      "nameZh": "SQL 布尔条件：不等与否定比较"
     },
     {
       "id": 942150,
@@ -3307,7 +3307,7 @@
       "message": "SQL Injection Attack: SQL function name detected",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "SQL 函数名称注入"
+      "nameZh": "SQL 注入：扩展 SQL 函数名称"
     },
     {
       "id": 942180,
@@ -3397,7 +3397,7 @@
       "message": "Detects concatenated basic SQL injection and SQLLFI attempts",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "拼接式 SQL 注入或 SQL 本地文件包含"
+      "nameZh": "SQL 语句与函数的紧邻拼接"
     },
     {
       "id": 942370,
@@ -3415,7 +3415,7 @@
       "message": "SQL Injection Attack",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "SQL 注入"
+      "nameZh": "SQL 注入：HAVING 条件"
     },
     {
       "id": 942390,
@@ -3433,7 +3433,7 @@
       "message": "SQL Injection Attack",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "SQL 注入"
+      "nameZh": "SQL 注入：AND 条件"
     },
     {
       "id": 942410,
@@ -3442,7 +3442,7 @@
       "message": "SQL Injection Attack",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "SQL 注入"
+      "nameZh": "SQL 注入：数据库转换与字符函数"
     },
     {
       "id": 942470,
@@ -3451,7 +3451,7 @@
       "message": "SQL Injection Attack",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "SQL 注入"
+      "nameZh": "SQL 注入：数据库系统变量与内部对象"
     },
     {
       "id": 942480,
@@ -3514,7 +3514,7 @@
       "message": "Detects basic SQL authentication bypass attempts 4.1/4",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "SQL 认证绕过（4.1/4）"
+      "nameZh": "SQL 认证绕过（4.1/4）（REQUEST_HEADERS:User-Agent|REQUEST_HEADERS:Referer|ARGS_NAMES|ARGS|XML:/*|XML://@*）"
     },
     {
       "id": 942522,
@@ -3523,7 +3523,7 @@
       "message": "Detects basic SQL authentication bypass attempts 4.1/4",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "SQL 认证绕过（4.1/4）"
+      "nameZh": "SQL 认证绕过（4.1/4）（ARGS_NAMES|ARGS|XML:/*|XML://@*）"
     },
     {
       "id": 942101,
@@ -3532,7 +3532,7 @@
       "message": "SQL Injection Attack Detected via libinjection",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "libinjection 识别的 SQL 注入"
+      "nameZh": "libinjection 识别的 SQL 注入（REQUEST_BASENAME|REQUEST_FILENAME）"
     },
     {
       "id": 942152,
@@ -3550,7 +3550,7 @@
       "message": "Detects MySQL and PostgreSQL stored procedure/function injections",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "MySQL/PostgreSQL 存储过程或函数注入"
+      "nameZh": "MySQL/PostgreSQL 存储过程或函数注入（REQUEST_HEADERS:Referer|REQUEST_HEADERS:User-Agent）"
     },
     {
       "id": 942015,
@@ -3811,7 +3811,7 @@
       "message": "Remote Command Execution: Java serialization (CVE-2015-4852)",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Java 反序列化命令执行（CVE-2015-4852）"
+      "nameZh": "Java 反序列化：危险类与 Runtime 链式调用"
     },
     {
       "id": 944130,
@@ -3838,7 +3838,7 @@
       "message": "Potential Remote Command Execution: Log4j / Log4shell",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "Log4Shell 命令执行载荷"
+      "nameZh": "Log4Shell：嵌套变量查询载荷"
     },
     {
       "id": 944013,
@@ -3865,7 +3865,7 @@
       "message": "Potential Remote Command Execution: Log4j / Log4shell",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "Log4Shell 命令执行载荷"
+      "nameZh": "Log4Shell：深层嵌套变量查询载荷"
     },
     {
       "id": 944200,
@@ -3892,7 +3892,7 @@
       "message": "Remote Command Execution: Java serialization (CVE-2015-4852)",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "Java 反序列化命令执行（CVE-2015-4852）"
+      "nameZh": "Java 反序列化：危险类名称检测"
     },
     {
       "id": 944250,
@@ -3964,7 +3964,7 @@
       "message": "Potential Remote Command Execution: Log4j / Log4shell",
       "paranoiaLevel": 4,
       "internal": false,
-      "nameZh": "Log4Shell 命令执行载荷"
+      "nameZh": "Log4Shell：变量查询起始标记"
     },
     {
       "id": 949052,
@@ -4684,7 +4684,7 @@
       "message": "PHP Information Leakage",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "PHP 信息泄露"
+      "nameZh": "PHP 错误消息泄露"
     },
     {
       "id": 953110,
@@ -4693,7 +4693,7 @@
       "message": "PHP source code leakage",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "PHP 源码泄露"
+      "nameZh": "PHP 源码：函数调用片段泄露"
     },
     {
       "id": 953120,
@@ -4702,7 +4702,7 @@
       "message": "PHP source code leakage",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "PHP 源码泄露"
+      "nameZh": "PHP 源码：起始标签泄露"
     },
     {
       "id": 953013,
@@ -4729,7 +4729,7 @@
       "message": "PHP Information Leakage",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "PHP 信息泄露"
+      "nameZh": "PHP 运行时错误详情泄露"
     },
     {
       "id": 953015,
@@ -4792,7 +4792,7 @@
       "message": "Disclosure of IIS install location",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IIS 安装路径泄露"
+      "nameZh": "IIS Windows 盘符安装路径泄露"
     },
     {
       "id": 954110,
@@ -4810,7 +4810,7 @@
       "message": "IIS Information Leakage",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IIS 信息泄露"
+      "nameZh": "IIS 信息泄露（RESPONSE_BODY）"
     },
     {
       "id": 954130,
@@ -4819,7 +4819,7 @@
       "message": "IIS Information Leakage",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "IIS 信息泄露"
+      "nameZh": "IIS 信息泄露（RESPONSE_STATUS）"
     },
     {
       "id": 954013,
@@ -4846,7 +4846,7 @@
       "message": "Disclosure of IIS install location",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "IIS 安装路径泄露"
+      "nameZh": "IIS inetpub 目录路径泄露"
     },
     {
       "id": 954015,
@@ -5008,7 +5008,7 @@
       "message": "Unknown web shell",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "未知 WebShell 后门"
+      "nameZh": "WebShell：Artyum 页面指纹"
     },
     {
       "id": 955220,
@@ -5035,7 +5035,7 @@
       "message": "Unknown web shell",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "未知 WebShell 后门"
+      "nameZh": "WebShell：PHP Web Shell 标题指纹"
     },
     {
       "id": 955250,
@@ -5044,7 +5044,7 @@
       "message": "Unknown web shell",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "未知 WebShell 后门"
+      "nameZh": "WebShell：HTML 页面布局指纹"
     },
     {
       "id": 955260,

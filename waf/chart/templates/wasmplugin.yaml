@@ -22,5 +22,11 @@ spec:
     useCRS: true
     paranoiaLevel: 1
     engineMode: "On"
-    secRules: []
+    w7Policy:
+      protectionMode: disabled
+      useCRS: true
+      paranoiaLevel: 1
+      categories: {}
+      ruleStates: {}
+      customRules: []
   matchRules: []
