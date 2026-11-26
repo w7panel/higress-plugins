@@ -1,8 +1,5 @@
 <template>
   <main class="waf-page">
-    <a-alert type="info" class="scope-note">
-      {{ scope === 'rule' ? `当前域名：${domain}` : '全局 WAF 默认配置' }}。系统规则来自 OWASP CRS，可关闭但不能删除。
-    </a-alert>
     <a-tabs v-model:active-key="tab">
       <a-tab-pane key="system" title="系统规则">
         <div class="crs-config">
@@ -23,7 +20,7 @@
           <a-link v-if="scope === 'rule' && requestBodyAccessOverride !== null" @click="requestBodyAccessOverride = null">恢复全局</a-link>
         </div>
         <p class="rule-hint">使用 REQUEST_BODY 或 POST 表单参数等请求体变量时开启；网关将读取请求体，可能增加内存占用。关闭不会改变 CRS 自身的请求体配置。</p>
-        <a-table :columns="systemColumns" :data="categories" :pagination="false" :expandable="{}" row-key="name">
+          <a-table :columns="systemColumns" :data="categories" :pagination="false" :expandable="{}" row-key="name">
           <template #expand-row="{ record }">
             <a-table :columns="ruleColumns" :data="categoryRules(record.name)" :pagination="false" row-key="id">
               <template #ruleEnabled="{ record: rule }">
@@ -119,7 +116,7 @@ export default {
       globalUseCRS: true, useCRSOverride: null, globalRequestBodyAccess: false, requestBodyAccessOverride: null, globalCategories: {}, overrides: {}, globalRules: [], customRules: [], disabledGlobalIds: [],
       visualForm: { id: 1000000, type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] },
       editingKey: '', saving: false, loadingLogs: false, checkingMetrics: false, hasMetrics: false, metricsError: '', logs: [],
-      systemColumns: [{ title: 'OWASP CRS 类别', dataIndex: 'titleZh' }, { title: '开启', slotName: 'enabled', width: 180 }],
+      systemColumns: [{ title: '防护类别', dataIndex: 'titleZh' }, { title: '开启', slotName: 'enabled', width: 180 }],
       ruleColumns: [{ title: 'ID', dataIndex: 'id', width: 100 }, { title: '防护名称', dataIndex: 'nameZh' }, { title: '严格程度', dataIndex: 'paranoiaLevel', render: ({ record }) => record.paranoiaLevel ? `PL${record.paranoiaLevel}` : '默认', width: 100 }, { title: '开启', slotName: 'ruleEnabled', width: 180 }],
       customColumns: [{ title: '规则 ID', slotName: 'id', width: 130 }, { title: 'SecRule', slotName: 'rule' }, { title: '操作', slotName: 'operation', width: 140 }],
       logColumns: [{ title: '时间', dataIndex: 'time' }, { title: '域名', dataIndex: 'domain' }, { title: '路径', dataIndex: 'path' }, { title: '状态码', dataIndex: 'status' }],
@@ -292,7 +289,7 @@ export default {
 <style>
 * { box-sizing: border-box; }
 body { margin: 0; color: #1d2129; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-.waf-page { padding: 20px; background: #fff; }
+.waf-page { padding: 0; background: #fff; }
 .scope-note { margin-bottom: 16px; }
 .crs-config { display: flex; align-items: center; gap: 10px; margin: 4px 0 8px; }
 .section-title { margin: 22px 0 10px; font-weight: 600; }

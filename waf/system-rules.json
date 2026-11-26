@@ -2272,7 +2272,7 @@
       "message": "PHP Injection Attack: Variables Found",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "PHP 变量声明检测"
+      "nameZh": "PHP 常见变量名注入检测"
     },
     {
       "id": 933135,
@@ -2335,7 +2335,7 @@
       "message": "PHP Injection Attack: Variable Function Call Found",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "PHP 可变函数调用"
+      "nameZh": "PHP 变量函数直接调用"
     },
     {
       "id": 933210,
@@ -2344,7 +2344,7 @@
       "message": "PHP Injection Attack: Variable Function Call Found",
       "paranoiaLevel": 1,
       "internal": false,
-      "nameZh": "PHP 可变函数调用"
+      "nameZh": "PHP 变量函数混淆调用"
     },
     {
       "id": 933220,
@@ -2380,7 +2380,7 @@
       "message": "PHP Injection Attack: Medium-Risk PHP Function Name Found",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "中风险 PHP 函数名称"
+      "nameZh": "中风险 PHP 函数名称（列表 1/3）"
     },
     {
       "id": 933152,
@@ -2389,7 +2389,7 @@
       "message": "PHP Injection Attack: Medium-Risk PHP Function Name Found",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "中风险 PHP 函数名称"
+      "nameZh": "中风险 PHP 函数名称（列表 2/3）"
     },
     {
       "id": 933153,
@@ -2398,7 +2398,7 @@
       "message": "PHP Injection Attack: Medium-Risk PHP Function Name Found",
       "paranoiaLevel": 2,
       "internal": false,
-      "nameZh": "中风险 PHP 函数名称"
+      "nameZh": "中风险 PHP 函数名称（列表 3/3）"
     },
     {
       "id": 933015,
@@ -2425,7 +2425,7 @@
       "message": "PHP Injection Attack: Variables Found",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "PHP 变量声明检测"
+      "nameZh": "PHP 服务器变量名注入检测"
     },
     {
       "id": 933161,
@@ -2461,7 +2461,7 @@
       "message": "PHP Injection Attack: Variable Function Call Found",
       "paranoiaLevel": 3,
       "internal": false,
-      "nameZh": "PHP 可变函数调用"
+      "nameZh": "PHP 变量函数混淆调用（可省分号）"
     },
     {
       "id": 933017,
