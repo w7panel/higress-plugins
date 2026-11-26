@@ -18,6 +18,19 @@
 
 ## 本地联调
 
+### 整套 CRS 加载性能（2026-11-26）
+
+Wasm 曾在 `main.go` 注册 `coraza-wasilibs` 的 RX、PM、SQLi、XSS 算子。当前 Higress Envoy 的 V8 Wasm 环境中，这些算子会引入额外的 Wasm 运行开销；慢点在 `coraza.NewWAF()` 初始化规则，尤其是 `go-re2` 的嵌套 wazero 调用。现改用 Coraza 自带的 Go 算子，保留同一套 CRS 规则与配置。
+
+本地用 Higress Gateway 2.2.3、2 核、8 GiB、2 个工作线程、`useCRS: true` 对比：
+
+| 版本 | Envoy 启动到就绪 | 单次 `coraza.NewWAF()` | 容器内存 |
+| --- | ---: | ---: | ---: |
+| 注册 wasilibs 的原镜像 | 约 84 秒 | 未单独测量 | 约 1.9 GiB |
+| 移除 wasilibs 的本地 Wasm | 约 6.4 秒 | 约 0.21 秒 | 约 0.53 GiB |
+
+`NewWAF()` 的 0.21 秒来自临时分段计时构建；Envoy 整体冷启动仍约 6 秒，不能算作 1 秒内就绪。两版均通过本地自定义规则、SQLi、XSS 拦截和正常请求探针。复测方法见 `skills/waf-envoy-test/SKILL.md`；生产资源和不同并发数下的耗时需另测。
+
 参考 `w7panel-kilo` 的独立页面方式，在本机启动开发服务器，直接打开 WAF 页面。开发服务器代理 `/k8s-proxy/*` 和日志使用的 `/panel-api/v1/*` 到 W7Panel；首次请求时会提示输入面板令牌，令牌仅保存在当前页面内存中，刷新后需重新输入。当前用户需有读取和更新 WAF WasmPlugin 的 Kubernetes 权限。
 
 ```sh

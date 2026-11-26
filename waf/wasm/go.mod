@@ -4,7 +4,6 @@ go 1.24.1
 
 
 require (
-	github.com/corazawaf/coraza-wasilibs v0.0.0-20230408002644-e2e3af21f503
 	github.com/corazawaf/coraza/v3 v3.3.3
 	github.com/higress-group/proxy-wasm-go-sdk v0.0.0-20251103120604-77e9cce339d2
 	github.com/higress-group/wasm-go v1.2.1
@@ -14,7 +13,6 @@ require (
 require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/valllabh/ocsf-schema-golang v1.0.3 // indirect
-	github.com/wasilibs/go-re2 v1.0.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 )
@@ -24,12 +22,9 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/magefile/mage v1.15.1-0.20241126214340-bdc92f694516 // indirect
 	github.com/petar-dambovaliev/aho-corasick v0.0.0-20240411101913-e07a1f0e8eb4 // indirect
-	github.com/tetratelabs/wazero v1.7.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/resp v0.1.1 // indirect
-	github.com/wasilibs/go-aho-corasick v0.3.0 // indirect
-	github.com/wasilibs/go-libinjection v0.2.1 // indirect
 	// indirect
 	golang.org/x/net v0.37.0 // indirect
 	rsc.io/binaryregexp v0.2.0 // indirect
