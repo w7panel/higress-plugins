@@ -1,5 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
+    rc::Rc,
     sync::Arc,
 };
 
@@ -194,8 +195,7 @@ pub fn directives(config: &Value) -> Result<String, String> {
     Ok(lines.join("\n"))
 }
 
-pub fn compile(bytes: &[u8]) -> Result<Waf, String> {
-    let config: Value = serde_json::from_slice(bytes).map_err(|error| error.to_string())?;
+fn compile_value(config: &Value) -> Result<Waf, String> {
     if !config.is_object() {
         return Err("configuration must be an object".to_owned());
     }
@@ -208,6 +208,50 @@ pub fn compile(bytes: &[u8]) -> Result<Waf, String> {
         return Err(format!("skipped rule: {skipped}"));
     }
     parser.compile().map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+fn compile(bytes: &[u8]) -> Result<Waf, String> {
+    let config: Value = serde_json::from_slice(bytes).map_err(|error| error.to_string())?;
+    compile_value(&config)
+}
+
+pub struct Policies {
+    pub default: Option<Rc<Waf>>,
+    pub routes: BTreeMap<String, Rc<Waf>>,
+}
+
+pub fn compile_policies(bytes: &[u8]) -> Result<Policies, String> {
+    let mut config: Value = serde_json::from_slice(bytes).map_err(|error| error.to_string())?;
+    let object = config
+        .as_object_mut()
+        .ok_or("configuration must be an object")?;
+    let Some(rules) = object.remove("_rules_") else {
+        return Ok(Policies {
+            default: Some(Rc::new(compile_value(&config)?)),
+            routes: BTreeMap::new(),
+        });
+    };
+    let default = if object.is_empty() {
+        None
+    } else {
+        Some(Rc::new(compile_value(&config)?))
+    };
+    let mut routes = BTreeMap::new();
+    for rule in rules.as_array().ok_or("_rules_ must be an array")? {
+        let names = rule
+            .get("_match_route_")
+            .and_then(Value::as_array)
+            .ok_or("_match_route_ must be an array")?;
+        let waf = Rc::new(compile_value(rule)?);
+        for name in names {
+            let name = name.as_str().ok_or("route name must be a string")?;
+            if routes.insert(name.to_owned(), waf.clone()).is_some() {
+                return Err(format!("duplicate route {name}"));
+            }
+        }
+    }
+    Ok(Policies { default, routes })
 }
 
 #[cfg(test)]
@@ -239,5 +283,13 @@ mod tests {
         let on = compile(br#"{"requestBodyAccess":true}"#).unwrap();
         assert!(!off.config().request_body_access);
         assert!(on.config().request_body_access);
+    }
+
+    #[test]
+    fn higress_route_policy() {
+        let policies = compile_policies(br#"{"_rules_":[{"_match_route_":["test-route"],"customRules":[{"enabled":true,"rule":"SecRule REQUEST_URI \"@streq /probe\" \"id:1000000,phase:1,deny,status:403\""}]}]}"#).unwrap();
+        assert!(policies.default.is_none());
+        assert!(policies.routes["test-route"].rule_count() > 0);
+        assert!(compile_policies(br#"{"_rules_":[{"customRules":[]}]}"#).is_err());
     }
 }

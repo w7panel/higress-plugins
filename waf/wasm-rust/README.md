@@ -1,6 +1,6 @@
 # Rust WAF WASM 内存实验
 
-这是独立的对照插件，不接入 WAF Chart 或发布目标。它使用 `coraza-rs` 的固定提交、同一个 `waf/wasm/wasmplugin/rules/` CRS 目录和现有 WAF JSON 配置。上游 Rust 引擎与 Go Coraza 的规则语义不能视为完全等价。
+这是独立的对照插件，不接入 WAF Chart；`make full` 会将它作为独立镜像推送。它使用 `coraza-rs` 的固定提交、同一个 `waf/wasm/wasmplugin/rules/` CRS 目录和现有 WAF JSON 配置。上游 Rust 引擎与 Go Coraza 的规则语义不能视为完全等价。
 
 ```sh
 mise install rust@1.99.1
@@ -38,3 +38,18 @@ bash waf/skills/waf-envoy-test/scripts/test.sh waf/wasm-rust/target/wasm32-wasip
 | 20 次更新期间 `memory.peak` | 658.1 MiB | 309.7 MiB |
 
 **结论：**这 20 次规则更新没有观察到逐轮累积；两版都在首次更新后跃升，随后形成稳定高水位。`memory.current` 包含 Envoy、WASM 运行时和 cgroup 文件缓存，不能据此断言旧规则对象完全释放，也不能把首次跃升归因于 Rust 引擎。长时间运行、高并发请求和生产配置仍需另测。
+
+## 218 集群对照（2026-11-26）
+
+Higress Gateway 的两个独立 Ingress 分别绑定 `w7panel-pluginwaf`（Go）和 `w7panel-wafrust`（Rust），两边均启用 CRS PL1。通过 `kubectl port-forward` 发请求，复用 HTTP 连接；以下 RPS 受隧道和测试客户端影响，仅用于同环境对照。正常请求应返回 200，SQLi、XSS 和 POST 表单 SQLi 应返回 403；全部请求均无状态码错误。
+
+| 场景 | Go RPS / p95 | Rust RPS / p95 |
+| --- | ---: | ---: |
+| 正常，500 次、并发 1 | 21.4 / 55.9 ms | 27.5 / 38.6 ms |
+| 正常，1000 次、并发 20 | 192.8 / 134.2 ms | 307.9 / 70.9 ms |
+| 正常，1000 次、并发 50 | 188.1 / 338.4 ms | 453.7 / 153.2 ms |
+| SQLi，500 次、并发 20 | 164.3 / 177.6 ms | 336.6 / 59.8 ms |
+| XSS，500 次、并发 20 | 140.3 / 168.3 ms | 326.9 / 68.6 ms |
+| POST 表单 SQLi，500 次、并发 20 | 158.0 / 161.4 ms | 334.9 / 132.4 ms |
+
+Envoy `wasm.envoy.wasm.runtime.v8.plugin.*.memory_size` 的主线程加两个 worker：压测前 Go 312.0 MiB、Rust 103.5 MiB；全部请求压测后 Go 344.0 MiB、Rust 107.1 MiB。连续替换自定义规则且逐轮验证新规则生效后，Go 第 20 次为 396.0 MiB，期间在 308–436 MiB 波动；Rust首次更新后 196.1 MiB，第 20 次 220.8 MiB，第 40 次 223.1 MiB。Rust 的首次重编译有约 89 MiB 跃升，随后趋缓。该指标是 WASM 线性内存大小，不是插件 RSS；它能显示高水位增长，不能单独证明对象泄漏或回收。两插件同驻一个网关，容器总内存不能按插件拆分。

@@ -2,10 +2,7 @@ mod config;
 
 use std::rc::Rc;
 
-use coraza::{
-    transaction::{Interruption, Transaction},
-    Waf,
-};
+use coraza::transaction::{Interruption, Transaction};
 use proxy_wasm::{
     hostcalls,
     traits::{Context, HttpContext, RootContext},
@@ -15,12 +12,12 @@ use proxy_wasm::{
 proxy_wasm::main! {{
     proxy_wasm::set_log_level(LogLevel::Info);
     proxy_wasm::set_root_context(|_| -> Box<dyn RootContext> {
-        Box::new(Root { waf: None })
+        Box::new(Root { policies: None })
     });
 }}
 
 struct Root {
-    waf: Option<Rc<Waf>>,
+    policies: Option<Rc<config::Policies>>,
 }
 
 impl Context for Root {}
@@ -35,9 +32,9 @@ impl RootContext for Root {
             Ok(Some(bytes)) => bytes,
             _ => return false,
         };
-        match config::compile(&bytes) {
-            Ok(waf) => {
-                self.waf = Some(Rc::new(waf));
+        match config::compile_policies(&bytes) {
+            Ok(policies) => {
+                self.policies = Some(Rc::new(policies));
                 true
             }
             Err(error) => {
@@ -50,8 +47,9 @@ impl RootContext for Root {
 
     fn create_http_context(&self, _context_id: u32) -> Option<Box<dyn HttpContext>> {
         Some(Box::new(Stream {
-            waf: self.waf.clone(),
+            policies: self.policies.clone(),
             tx: None,
+            disabled: false,
             request_done: false,
             response_done: false,
             protocol: "HTTP/2.0".to_owned(),
@@ -60,8 +58,9 @@ impl RootContext for Root {
 }
 
 struct Stream {
-    waf: Option<Rc<Waf>>,
+    policies: Option<Rc<config::Policies>>,
     tx: Option<Transaction>,
+    disabled: bool,
     request_done: bool,
     response_done: bool,
     protocol: String,
@@ -140,8 +139,20 @@ impl Context for Stream {
 
 impl HttpContext for Stream {
     fn on_http_request_headers(&mut self, _num_headers: usize, end_of_stream: bool) -> Action {
-        let Some(waf) = &self.waf else {
+        let Some(policies) = &self.policies else {
             return Self::refuse(503);
+        };
+        let route = hostcalls::get_property(vec!["route_name"])
+            .ok()
+            .flatten()
+            .map(|name| String::from_utf8_lossy(&name).into_owned());
+        let Some(waf) = route
+            .as_ref()
+            .and_then(|name| policies.routes.get(name))
+            .or(policies.default.as_ref())
+        else {
+            self.disabled = true;
+            return Action::Continue;
         };
         let mut tx = waf.new_transaction();
         let Ok(Some(path)) = self.get_http_request_header(":path") else {
@@ -178,6 +189,9 @@ impl HttpContext for Stream {
     }
 
     fn on_http_request_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
+        if self.disabled {
+            return Action::Continue;
+        }
         if body_size > 16 * 1024 * 1024 {
             return Self::refuse(413);
         }
@@ -188,6 +202,9 @@ impl HttpContext for Stream {
     }
 
     fn on_http_response_headers(&mut self, _num_headers: usize, end_of_stream: bool) -> Action {
+        if self.disabled {
+            return Action::Continue;
+        }
         if !self.request_done {
             let action = self.request_body(0);
             if action == Action::Pause {
@@ -221,6 +238,9 @@ impl HttpContext for Stream {
     }
 
     fn on_http_response_body(&mut self, body_size: usize, end_of_stream: bool) -> Action {
+        if self.disabled {
+            return Action::Continue;
+        }
         if body_size > 1024 * 1024 {
             return Self::refuse(502);
         }
