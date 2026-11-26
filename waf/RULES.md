@@ -1,6 +1,6 @@
 # WAF 系统规则
 
-自维护 Wasm 固定内置 OWASP CRS v4.30.0（上游提交 `e03a4f6dabc7a30ebd8c52c97d28a154f590a48f`）。`system-rules.json` 从内嵌的 conf 生成，包含 627 个规则 ID 和 21 个可选择的检测文件；`rule-names.zh.json` 为对应的中文名称映射。运行 `python3 generate_catalog.py --check` 验证文件、规则 ID 和名称一致。
+自维护 Wasm 固定内置 OWASP CRS v4.30.0（上游提交 `e03a4f6dabc7a30ebd8c52c97d28a154f590a48f`）。`ui/system-rules.json` 从内嵌的 conf 生成，包含 627 个规则 ID 和 21 个可选择的检测文件；`ui/rule-names.zh.json` 为对应的中文名称映射。运行 `python3 ui/scripts/generate_catalog.py --check` 验证文件、规则 ID 和名称一致。
 
 逐条中文防护名称及 PL 对照见 [CRS 规则名称整理](CRS-RULE-CATALOG.md)。
 

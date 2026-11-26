@@ -6,10 +6,10 @@ import json
 import re
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[2]
 RULES = ROOT / 'wasm/wasmplugin/rules/crs'
-NAMES = ROOT / 'rule-names.zh.json'
-OUTPUT = ROOT / 'system-rules.json'
+NAMES = ROOT / 'ui/rule-names.zh.json'
+OUTPUT = ROOT / 'ui/system-rules.json'
 VERSION = 'v4.30.0'
 GROUPS = {
     911: '请求方法', 913: '扫描器识别', 920: '协议与请求格式', 921: '协议攻击',

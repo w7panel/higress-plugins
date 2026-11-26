@@ -508,8 +508,8 @@ PL 栏的“—”表示规则没有 `paranoia-level` 标签，主要是辅助�
 - `RESPONSE-955-WEB-SHELLS.conf`：955011、955012、955013、955014、955015、955016、955017、955018
 - `RESPONSE-956-DATA-LEAKAGES-RUBY.conf`：956011、956012、956013、956014、956015、956016、956017、956018
 
-内部 conf（初始化、异常评分和阻断评估等）中的 112 个 ID 未列入上方可选检测规则。完整 ID 与源文件对应关系见 `system-rules.json`。
+内部 conf（初始化、异常评分和阻断评估等）中的 112 个 ID 未列入上方可选检测规则。完整 ID 与源文件对应关系见 `ui/system-rules.json`。
 
 ## 维护方式
 
-升级 CRS 时，先运行 `python3 generate_catalog.py` 更新 `system-rules.json`，再对照新增、删除或变更的 ID 更新本表及 `rule-names.zh.json`；运行 `python3 generate_catalog.py --check` 核对清单。中文名称描述规则的检测对象或特征，不代表规则一定阻断；是否执行还取决于 PL、类别开关、引擎模式和异常评分。
+升级 CRS 时，先运行 `python3 ui/scripts/generate_catalog.py` 更新 `ui/system-rules.json`，再对照新增、删除或变更的 ID 更新本表及 `ui/rule-names.zh.json`；运行 `python3 ui/scripts/generate_catalog.py --check` 核对清单。中文名称描述规则的检测对象或特征，不代表规则一定阻断；是否执行还取决于 PL、类别开关、引擎模式和异常评分。

@@ -5,7 +5,7 @@
 ## 自维护版本（2026-11-20）
 
 - Wasm 源码和固定版本 CRS 在 `wasm/`；CRS 上游提交 `e03a4f6dabc7a30ebd8c52c97d28a154f590a48f`，原许可证保留于 `wasm/CRS-LICENSE`。Higress 原插件代码许可证见 `wasm/HIGRESS-LICENSE`。
-- `python3 generate_catalog.py --check` 核对 627 条规则、21 个检测 conf 的清单与中文名称映射；映射缺 ID、缺中文名称、重复 ID 或清单过期时失败。中文名称按 CRS 检测消息逐条整理，原始英文 `message` 保留供逐条核对；界面按 conf 折叠显示检测规则，可逐条开关。
+- `python3 ui/scripts/generate_catalog.py --check` 核对 627 条规则、21 个检测 conf 的清单与中文名称映射；映射缺 ID、缺中文名称、重复 ID 或清单过期时失败。中文名称按 CRS 检测消息逐条整理，原始英文 `message` 保留供逐条核对；界面按 conf 折叠显示检测规则，可逐条开关。
 - 全局策略可设置 CRS 总开关、PL1–PL4、`SecRuleEngine` 的 `On`、`DetectionOnly`、`Off`、请求体检查和自定义规则。域名可覆盖 conf 类别、CRS 总开关、请求体检查，并禁用继承的全局自定义规则。自定义规则 ID 从 1000000 起。
 - `VERSION=0.1.0-crs4.30.0-verified make build-image` 构建 `ccr.ccs.tencentyun.com/afan-public/w7panel-waf:<版本>`；`make push-image` 推送。构建固定使用 Higress Go 1.24.4、Coraza 3.3.3、`no_fs_access` 标签和 `https://goproxy.cn,direct` 模块镜像。`make build-helm` 生成默认停用的 WasmPlugin Chart。新资源默认 PL1、On，旧策略不迁移。当前 218 Helm release 还包含 MicroApp，测试换镜像时应备份并只修改 WasmPlugin，不能直接用这个 Chart 升级原 release。
 - 发布顺序：先构建并推送 Wasm，备份原 WasmPlugin YAML，保持 `defaultConfigDisable: true` 与 `matchRules: []` 切换 OCI 地址和清空旧配置；再发布 WAF 前端，最后发布移除旧 WAF 路由的面板。仅在受控测试窗口临时启用域名规则，达到 6500 MiB、就绪失败或请求失败立即回滚。最终恢复 WAF 停用和 Envoy 72 线程。
@@ -30,7 +30,7 @@
 参考 `w7panel-kilo` 的独立页面方式，在本机启动开发服务器，直接打开 WAF 页面。开发服务器代理 `/k8s-proxy/*` 和日志使用的 `/panel-api/v1/*` 到 W7Panel；首次请求时会提示输入面板令牌，令牌仅保存在当前页面内存中，刷新后需重新输入。当前用户需有读取和更新 WAF WasmPlugin 的 Kubernetes 权限。
 
 ```sh
-cd waf
+cd waf/ui
 npm ci
 npm run dev
 ```
@@ -39,7 +39,7 @@ npm run dev
 
 **本地保存会立即修改目标集群的 WAF 配置**，日志也来自真实网关。218 集群的 72 线程网关即使只启用无 CRS 的空规则，也曾迅速接近 8 GiB 内存上限；联调时不要直接启用 WAF。结束测试后停止开发服务器。生产构建仍通过宿主注入接口工作。
 
-运行 `make ui` 构建并生成 `dist/frontend.zip`。域名入口只查询当前域名的日志；日志保留时间由 VictoriaLogs 配置决定。
+在 `waf/` 运行 `make ui` 构建并生成 `ui/dist/frontend.zip`。域名入口只查询当前域名的日志；日志保留时间由 VictoriaLogs 配置决定。
 
 设置环境变量 `VERSION=1.0.0` 和 `ZPK_IDC_PASSWORD` 后，运行 `make full` 构建、推送 Wasm 镜像和前端 ZPK，并打包 Helm Chart。先切换插件前端并验证直接读写 WasmPlugin，再发布移除旧 `/waf/config` 路由的面板版本。该命令不自动升级集群中的 Helm release。
 
@@ -134,7 +134,7 @@ secRules:
 
 ## 系统规则 ID 与来源
 
-旧版 WAF 的“协议与请求格式”类别使用 `920000-922999` 作为关闭范围。以下为旧版规则 ID 的历史记录；当前自维护版本的规则清单见 `system-rules.json`，编译逻辑见 `config.go`。
+旧版 WAF 的“协议与请求格式”类别使用 `920000-922999` 作为关闭范围。以下为旧版规则 ID 的历史记录；当前自维护版本的规则清单见 `ui/system-rules.json`，编译逻辑见 `config.go`。
 
 以下清单以 [OWASP CRS 3.3.2 的 920 规则文件](https://github.com/coreruleset/coreruleset/blob/v3.3.2/rules/REQUEST-920-PROTOCOL-ENFORCEMENT.conf)和[921 规则文件](https://github.com/coreruleset/coreruleset/blob/v3.3.2/rules/REQUEST-921-PROTOCOL-ATTACK.conf)中的 `id:` 为准。完整文件列表见 [CRS 3.3.2 rules 目录](https://github.com/coreruleset/coreruleset/tree/v3.3.2/rules)；该版本没有 `REQUEST-922` 文件或 922xxx 规则。
 
