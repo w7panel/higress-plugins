@@ -13,4 +13,4 @@ bash waf/skills/waf-envoy-test/scripts/test.sh ccr.ccs.tencentyun.com/afan-publi
 
 也可传入本地 `.wasm` 文件。验证当前源码时先构建镜像，例如 `docker build -t waf-local:test waf/wasm`，再把 `waf-local:test` 传给脚本。需要 Docker、curl，首次运行会拉取 Gateway 镜像。
 
-报告启动到就绪时间、每次 `plugin start successfully` 的时间、内存和四个探针结果。区分 Envoy 冷启动与 `coraza.NewWAF()` 耗时：普通镜像日志不能单独量出后者；若镜像带分段计时日志，再引用该日志。测试超时或规则不符时保留脚本输出以定位，不把本地结果当作线上耗时。
+报告启动到就绪时间、每次 `plugin start successfully` 的时间、探针后的内存、可读取时的容器 cgroup 内存峰值和四个探针结果。区分 Envoy 冷启动与 `coraza.NewWAF()` 耗时：普通镜像日志不能单独量出后者；若镜像带分段计时日志，再引用该日志。测试超时或规则不符时保留脚本输出以定位，不把本地结果当作线上耗时。

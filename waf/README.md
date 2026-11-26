@@ -29,7 +29,7 @@ Wasm 曾在 `main.go` 注册 `coraza-wasilibs` 的 RX、PM、SQLi、XSS 算子�
 | 注册 wasilibs 的原镜像 | 约 84 秒 | 未单独测量 | 约 1.9 GiB |
 | 移除 wasilibs 的本地 Wasm | 约 6.4 秒 | 约 0.21 秒 | 约 0.53 GiB |
 
-`NewWAF()` 的 0.21 秒来自临时分段计时构建；Envoy 整体冷启动仍约 6 秒，不能算作 1 秒内就绪。两版均通过本地自定义规则、SQLi、XSS 拦截和正常请求探针。复测方法见 `skills/waf-envoy-test/SKILL.md`；生产资源和不同并发数下的耗时需另测。
+`NewWAF()` 的 0.21 秒来自临时分段计时构建；Envoy 整体冷启动仍约 6 秒，不能算作 1 秒内就绪。两版均通过本地自定义规则、SQLi、XSS 拦截和正常请求探针。复测方法见 `skills/waf-envoy-test/SKILL.md`；生产资源和不同并发数下的耗时需另测。独立 Rust WASM 内存对照见 `wasm-rust/README.md`。
 
 ### 规则更新时的内存累积（2026-11-26）
 

@@ -1,0 +1,15 @@
+[package]
+name = "waf-rust-experiment"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.99"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+coraza = { git = "https://gh-proxy.org/https://github.com/networking-incubator/coraza-rs.git", rev = "bc97a99da879d002d66a5114c51b3c13f2d1dec3", default-features = false }
+proxy-wasm = { git = "https://gh-proxy.org/https://github.com/Kuadrant/proxy-wasm-rust-sdk.git", rev = "6ceedbbdd07a048a65d197c9bbb1f950884561fb" }
+include_dir = "0.7"
+regex = "1"
+serde_json = "1"

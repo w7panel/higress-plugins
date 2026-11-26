@@ -64,3 +64,11 @@ check sqli 403 "$(curl -sS -G -o /dev/null -w '%{http_code}' --max-time 10 --dat
 check xss 403 "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$base/?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E")"
 check normal 200 "$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$base/normal")"
 docker stats --no-stream --format '内存: {{.MemUsage}}' "$container"
+pid=$(docker inspect -f '{{.State.Pid}}' "$container")
+if [[ -r "/proc/$pid/cgroup" ]]; then
+  cgroup=$(awk -F: '$1 == "0" {print $3}' "/proc/$pid/cgroup")
+  peak_file="/sys/fs/cgroup$cgroup/memory.peak"
+  if [[ -f "$peak_file" ]]; then
+    awk '{printf "容器启动以来内存峰值: %.1f MiB\n", $1 / 1048576}' "$peak_file"
+  fi
+fi
