@@ -1,0 +1,7 @@
+mode,id,file,payload,body_bytes,requests,concurrency,load_seconds,rps,p50_ms,p95_ms,errors,attack_simple_status,attack_head_status,attack_tail_status
+body,body-off,,repeat,1024,100,8,0.13,5381.7,1.0,2.47,0,200,200,200
+body,body-off,,repeat,16384,100,8,0.11,5560.2,1.24,2.16,0,200,200,200
+body,no-crs,,repeat,1024,100,8,0.09,5221.7,1.37,2.45,0,200,200,200
+body,no-crs,,repeat,16384,100,8,0.09,4827.2,1.34,2.48,0,200,200,200
+body,full-crs,,repeat,1024,100,8,0.44,1268.2,4.82,10.27,0,403,403,403
+body,full-crs,,repeat,16384,100,8,0.12,221.7,35.93,41.84,0,403,403,403

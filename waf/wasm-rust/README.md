@@ -71,3 +71,5 @@ Higress Gateway 的两个独立 Ingress 分别绑定 `w7panel-pluginwaf`（Go）
 | POST 表单 SQLi，500 次、并发 20 | 158.0 / 161.4 ms | 334.9 / 132.4 ms |
 
 Envoy `wasm.envoy.wasm.runtime.v8.plugin.*.memory_size` 的主线程加两个 worker：压测前 Go 312.0 MiB、Rust 103.5 MiB；全部请求压测后 Go 344.0 MiB、Rust 107.1 MiB。连续替换自定义规则且逐轮验证新规则生效后，Go 第 20 次为 396.0 MiB，期间在 308–436 MiB 波动；Rust 首次更新后 196.1 MiB，第 20 次 220.8 MiB，第 40 次 223.1 MiB。Rust 的首次重编译有约 89 MiB 跃升，随后趋缓。该指标是 WASM 线性内存大小，不是插件 RSS；它能显示高水位增长，不能单独证明对象泄漏或回收。两插件同驻一个网关，容器总内存不能按插件拆分。
+
+请求体大小与官方 CRS 逐条规则的复测方法和结果见 [benchmarks/README.md](benchmarks/README.md)。
