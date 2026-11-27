@@ -37,7 +37,7 @@ test('standalone WAF reads and saves WasmPlugin through k8sproxy', async () => {
 
 test('global save compiles CRS and inherited domain rules', async () => {
   let plugin = { metadata: { resourceVersion: '3' }, spec: { defaultConfig: { useCRS: false, w7Policy: { protectionMode: 'observe' } }, matchRules: [
-    { ingress: ['default/site'], config: { w7Overrides: { protectionMode: 'custom' } } },
+    { ingress: ['default/site'], config: { w7Policy: { protectionMode: 'observe' }, w7Overrides: { protectionMode: 'custom' } } },
   ] } }
   const props = { configScope: 'global', k8sproxy: async (_, init) => {
     if (init?.method === 'PUT') { plugin = JSON.parse(init.body); return { ok: true, status: 200, json: async () => plugin } }
@@ -55,6 +55,7 @@ test('global save compiles CRS and inherited domain rules', async () => {
   assert.equal(plugin.spec.defaultConfig.w7Policy, undefined)
   assert.equal(plugin.spec.matchRules[0].config.useCRS, true)
   assert.equal(plugin.spec.matchRules[0].config.overrides.protectionMode, 'inherit')
+  assert.equal(plugin.spec.matchRules[0].config.w7Policy, undefined)
   assert.equal(plugin.spec.matchRules[0].config.w7Overrides, undefined)
   assert.equal(plugin.spec.matchRules[0].config.secRules, undefined)
   assert.equal(plugin.metadata.resourceVersion, '3')
@@ -149,7 +150,7 @@ test('policy categories and domain selections load without a file suffix', async
 
 test('old policy field names are ignored and removed on domain save', async () => {
   let plugin = { spec: { defaultConfig: { w7Policy: { protectionMode: 'observe' } }, matchRules: [
-    { ingress: ['default/site'], config: { w7Overrides: { protectionMode: 'custom' } } },
+    { ingress: ['default/site'], config: { w7Policy: { protectionMode: 'observe' }, w7Overrides: { protectionMode: 'custom' } } },
   ] } }
   const props = { configScope: 'rule', namespace: 'default', ingressName: 'site', k8sproxy: async (path, init) => {
     if (init?.method === 'PUT') { plugin = JSON.parse(init.body); return { ok: true, status: 200, json: async () => plugin } }
@@ -160,6 +161,7 @@ test('old policy field names are ignored and removed on domain save', async () =
   assert.equal(loaded.overrides.protectionMode, 'inherit')
   await saveWafConfig(props, { protectionMode: 'custom' })
   assert.equal(plugin.spec.defaultConfig.w7Policy, undefined)
+  assert.equal(plugin.spec.matchRules[0].config.w7Policy, undefined)
   assert.equal(plugin.spec.matchRules[0].config.w7Overrides, undefined)
   assert.equal(plugin.spec.matchRules[0].config.overrides.protectionMode, 'custom')
 })

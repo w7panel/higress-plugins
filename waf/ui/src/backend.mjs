@@ -103,6 +103,7 @@ export async function saveWafConfig(props, input) {
     spec.defaultConfig = config
     spec.defaultConfigDisable = global.protectionMode === 'disabled'
     for (const rule of rules) {
+      if (rule.config) delete rule.config.w7Policy
       if (!rule.config?.overrides && !rule.config?.w7Overrides) continue
       const overrides = policy(rule.config.overrides)
       delete overrides.useCRS
@@ -140,6 +141,7 @@ export async function saveWafConfig(props, input) {
     }
     const rule = rules[index]
     rule.config = { ...rule.config, ...compiled, overrides }
+    delete rule.config.w7Policy
     delete rule.config.w7Overrides
     for (const key of ['ruleFiles', 'secRules']) delete rule.config[key]
     rule.configDisable = (overrides.protectionMode === 'inherit' ? savedGlobal.protectionMode : overrides.protectionMode) === 'disabled'
