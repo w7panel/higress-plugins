@@ -42,6 +42,35 @@ func TestBuildDirectives(t *testing.T) {
 	}
 }
 
+func TestRequestBodyAccessFollowsConfig(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		config string
+		want   bool
+	}{
+		{"CRS default", `{"useCRS":true}`, false},
+		{"CRS enabled", `{"useCRS":true,"requestBodyAccess":true}`, true},
+		{"custom default", `{"useCRS":false}`, false},
+		{"custom enabled", `{"useCRS":false,"requestBodyAccess":true}`, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			directives, err := buildDirectives(gjson.Parse(tc.config))
+			if err != nil {
+				t.Fatal(err)
+			}
+			waf, err := coraza.NewWAF(coraza.NewWAFConfig().WithRootFS(root).WithDirectives(directives))
+			if err != nil {
+				t.Fatal(err)
+			}
+			tx := waf.NewTransaction()
+			defer tx.Close()
+			if got := tx.IsRequestBodyAccessible(); got != tc.want {
+				t.Fatalf("request body access = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 type testPluginContext struct{ values map[string]interface{} }
 
 func (c *testPluginContext) SetContext(key string, value interface{}) { c.values[key] = value }

@@ -275,6 +275,7 @@ mod tests {
         let full = compile(br#"{"useCRS":true,"engineMode":"On","paranoiaLevel":1}"#).unwrap();
         let reduced = compile(br#"{"useCRS":true,"categories":{"REQUEST-941-APPLICATION-ATTACK-XSS":false},"ruleStates":{"942100":false}}"#).unwrap();
         assert!(reduced.rule_count() < full.rule_count());
+        assert!(!full.config().request_body_access);
     }
 
     #[test]
