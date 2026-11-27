@@ -6,6 +6,8 @@
 python3 waf/wasm-rust/bench-rules.py body <镜像> --requests 100 --concurrency 8 --sizes 1024,16384
 python3 waf/wasm-rust/bench-rules.py rules <镜像> --requests 8 --concurrency 4
 python3 waf/wasm-rust/bench-rules.py rules <镜像> --ids 921110,932232,934100,942340,944120 --requests 40 --concurrency 4
+python3 waf/wasm-rust/bench-rules.py nonbody <镜像> --requests 8 --concurrency 4
+python3 waf/wasm-rust/bench-rules.py smoke <镜像或本地.wasm文件>
 ```
 
 `body` 模式分别测关闭 CRS 且关闭请求体、关闭 CRS 但打开请求体、完整 CRS PL1 三种配置；表单体是 `data=` 加重复字母 `a`。`--payload alnum` 可改为固定种子的随机字母数字。每个 body 场景还会将 SQLi 放在请求体开头和结尾探测拦截。`rules` 模式从 `ui/system-rules.json` 选取 **515 条用户可配置检测规则**：保留所选规则所在文件，关闭其他检测文件和同文件的其他检测 ID；CRS 必需的 112 条初始化、拦截和关联规则仍保留。396 条是请求规则，119 条是响应规则；响应规则的 POST body 时间主要反映基础路径。每轮等待 LDS 更新成功，再预热 3 次。CSV 中的 `errors` 是与预期 200 不符的请求数。
@@ -38,7 +40,7 @@ python3 waf/wasm-rust/bench-rules.py rules <镜像> --ids 921110,932232,934100,9
 
 这些是无攻击特征的长表单值扫描成本。完整 CRS 的耗时会叠加多条规则的扫描；不能用单规则 RPS 相加估算完整配置。较慢规则不宜只因性能而默认关闭，应先核对站点流量、命中情况和防护需求。
 
-## 超出请求体限制时的行为
+## 超出请求体限制时的行为（修复前）
 
 `wasm/wasmplugin/rules/coraza-demo.conf` 设置 `SecRequestBodyNoFilesLimit 131072` 和 `SecRequestBodyLimitAction Reject`。真实上游下，完整 CRS 的 128 KiB 表单体，首尾含 SQLi 都返回 403；256 KiB 时：
 
@@ -48,3 +50,18 @@ python3 waf/wasm-rust/bench-rules.py rules <镜像> --ids 921110,932232,934100,9
 | Rust | 503 | 503 | 503 |
 
 Go 插件在 `WriteRequestBody` 返回错误时直接继续转发，导致超出非文件限制的表单体绕过检查。Rust 插件在请求体回调中触发 WASM panic；Envoy 日志指向 WASI 不支持的系统路径操作并返回 503，具体调用链仍需定位。这两个行为都需要单独修复：超限请求应按明确策略拒绝或受控处理，不能静默放行或让 VM 崩溃。体积上限及处理策略适合在域名配置中明确呈现；在修复和验证前，不应依据本次性能数字将 Rust 插件视为可直接替换 Go 插件。
+
+## 非请求体规则与修复复测
+
+同一脚本的 `nonbody` 模式在每条规则单独加载后发送无请求体 GET：URL 含 1 KiB 普通查询值，请求头 `X-Bench` 含 1 KiB 普通值，真实上游返回 16 KiB HTML。每条 8 次、并发 4。原始结果：[Go 非 body](2026-11-27-go-nonbody.csv)、[Rust 非 body](2026-11-27-rust-nonbody.csv)。两边 515 条均加载成功；514 条对应正常请求均为 200，PL4 规则 920274 在两边均返回 403。单规则 p50 中位数 Go 1.56 ms、Rust 1.04 ms；Go 有 10 条超过 10 ms，Rust 为 0 条。8 次样本只用于筛查，不作为细小性能差异的排名。
+
+修复版的完整 CRS 真实上游探针结果如下；镜像以本地源码构建，未发布到 218 集群：
+
+| 场景 | Go | Rust |
+| --- | ---: | ---: |
+| 256 KiB 表单体，无攻击或首尾 SQLi | 413 | 413 |
+| 无请求体正常 GET | 200 | 200 |
+| URL SQLi、URL XSS、请求头扫描器 | 403 | 403 |
+| 响应含目录列表特征 | 200，同长度零字节覆盖 | 200，同长度零字节覆盖 |
+
+Go 的请求体写入错误现在停止转发；已知的 WASI 内存缓冲上限错误返回 413，其他写入错误返回 500。Rust 在进入不受支持的临时文件路径前按已编译的内存缓冲上限返回 413。两版的响应体命中现在保持原长度并覆盖为零字节，避免先发送响应头后改短 body 导致客户端等待或读取不完整。超过内存缓冲上限的请求体会整体拒绝，包含较大的文件上传；即使配置为 `DetectionOnly`，该运行环境也无法安全处理超限 body。支持大文件上传需要先为 WASI 临时文件路径设计和验证可用的存储方案。

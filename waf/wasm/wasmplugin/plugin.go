@@ -344,8 +344,13 @@ func onHttpRequestBody(ctx wrapper.HttpContext, config WafConfig, body []byte, l
 
 	interruption, _, err := tx.WriteRequestBody(body)
 	if err != nil {
-		log.Error("Failed to write request body")
-		return types.ActionContinue
+		log.Errorf("Failed to write request body: %v", err)
+		status := 500
+		// shortcut: Coraza 3.3.3 has no typed memory-limit error; replace this match when it does.
+		if err.Error() == "memoryLimit reached while writing" {
+			status = 413
+		}
+		return handleInterruption(ctx, "http_request_body", &ctypes.Interruption{Status: status}, log)
 	}
 
 	if interruption != nil {
@@ -427,6 +432,7 @@ func onHttpResponseHeaders(ctx wrapper.HttpContext, config WafConfig, log log.Lo
 }
 
 func onHttpResponseBody(ctx wrapper.HttpContext, config WafConfig, body []byte, log log.Log) types.Action {
+	ctx.SetContext("responseBodySize", len(body))
 	if ctx.GetBoolContext("interruptionHandled", false) {
 		// At response body phase, proxy-wasm currently relies on emptying the response body as a way of
 		// interruption the response. See https://github.com/corazawaf/coraza-proxy-wasm/issues/26.
@@ -435,7 +441,7 @@ func onHttpResponseBody(ctx wrapper.HttpContext, config WafConfig, body []byte, 
 		// Sending the crafted HttpResponse with empty body, we don't expect to trigger OnHttpResponseBody
 		// log.Warn("Response body interruption already handled, keeping replacing the body")
 		// Interruption happened, we don't want to send response body data
-		return replaceResponseBodyWhenInterrupted(log, replaceResponseBody)
+		return replaceResponseBodyWhenInterrupted(log, len(body))
 	}
 
 	tx, ok := ctx.GetContext("tx").(ctypes.Transaction)

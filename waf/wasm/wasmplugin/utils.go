@@ -17,8 +17,7 @@ import (
 )
 
 const (
-	noGRPCStream        int32 = -1
-	replaceResponseBody int   = 10
+	noGRPCStream int32 = -1
 )
 
 // retrieveAddressInfo retrieves address properties from the proxy
@@ -89,7 +88,8 @@ func handleInterruption(ctx wrapper.HttpContext, phase string, interruption *cty
 
 	ctx.SetContext("interruptionHandled", true)
 	if phase == "http_response_body" {
-		return replaceResponseBodyWhenInterrupted(log, replaceResponseBody)
+		bodySize, _ := ctx.GetContext("responseBodySize").(int)
+		return replaceResponseBodyWhenInterrupted(log, bodySize)
 	}
 
 	statusCode := interruption.Status
@@ -114,7 +114,7 @@ func replaceResponseBodyWhenInterrupted(logger log.Log, bodySize int) types.Acti
 	err := proxywasm.ReplaceHttpResponseBody(bytes.Repeat([]byte("\x00"), bodySize))
 	if err != nil {
 		logger.Error("Failed to replace response body")
-		return types.ActionContinue
+		return types.ActionPause
 	}
 	logger.Warn("Response body intervention occurred: body replaced")
 	return types.ActionContinue

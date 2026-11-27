@@ -2,7 +2,10 @@ mod config;
 
 use std::rc::Rc;
 
-use coraza::transaction::{Interruption, Transaction};
+use coraza::{
+    transaction::{Interruption, Transaction},
+    types::RuleEngineStatus,
+};
 use proxy_wasm::{
     hostcalls,
     traits::{Context, HttpContext, RootContext},
@@ -52,6 +55,7 @@ impl RootContext for Root {
             disabled: false,
             request_done: false,
             response_done: false,
+            request_memory_limit: 0,
             protocol: "HTTP/2.0".to_owned(),
         }))
     }
@@ -63,10 +67,17 @@ struct Stream {
     disabled: bool,
     request_done: bool,
     response_done: bool,
+    request_memory_limit: usize,
     protocol: String,
 }
 
 impl Stream {
+    fn inspects_request_body(&self) -> bool {
+        self.tx
+            .as_ref()
+            .is_some_and(|tx| tx.request_body_access() && tx.rule_engine() != RuleEngineStatus::Off)
+    }
+
     fn refuse(status: u32) -> Action {
         if let Err(error) = hostcalls::send_http_response(status, vec![], None) {
             hostcalls::log(LogLevel::Error, &format!("waf-rust reply: {error:?}")).ok();
@@ -92,6 +103,9 @@ impl Stream {
         if size > 16 * 1024 * 1024 {
             return Self::refuse(413);
         }
+        if self.inspects_request_body() && size > self.request_memory_limit {
+            return Self::refuse(413);
+        }
         self.request_done = true;
         let body = match hostcalls::get_buffer(BufferType::HttpRequestBody, 0, size) {
             Ok(Some(body)) => body,
@@ -113,16 +127,29 @@ impl Stream {
             return Self::refuse(502);
         }
         self.response_done = true;
-        let body = match hostcalls::get_buffer(BufferType::HttpResponseBody, 0, size) {
+        let mut body = match hostcalls::get_buffer(BufferType::HttpResponseBody, 0, size) {
             Ok(Some(body)) => body,
             Ok(None) if size == 0 => Vec::new(),
             _ => return Self::refuse(500),
         };
-        Self::verdict(
-            self.tx
-                .as_mut()
-                .and_then(|tx| tx.process_response_body(&body)),
-        )
+        if self
+            .tx
+            .as_mut()
+            .and_then(|tx| tx.process_response_body(&body))
+            .is_some()
+        {
+            body.fill(0);
+            if let Err(error) = hostcalls::set_buffer(BufferType::HttpResponseBody, 0, size, &body)
+            {
+                hostcalls::log(
+                    LogLevel::Error,
+                    &format!("waf-rust redact response: {error:?}"),
+                )
+                .ok();
+                return Self::refuse(502);
+            }
+        }
+        Action::Continue
     }
 }
 
@@ -155,6 +182,7 @@ impl HttpContext for Stream {
             return Action::Continue;
         };
         let mut tx = waf.new_transaction();
+        let configured_memory = waf.config().request_body_in_memory_limit;
         let Ok(Some(path)) = self.get_http_request_header(":path") else {
             return Self::refuse(500);
         };
@@ -176,6 +204,12 @@ impl HttpContext for Stream {
             tx.set_server_name(authority.as_bytes());
         }
         let verdict = tx.process_request_headers();
+        self.request_memory_limit = usize::try_from(if configured_memory == 0 {
+            tx.request_body_limit()
+        } else {
+            configured_memory
+        })
+        .unwrap_or(0);
         self.tx = Some(tx);
         let action = Self::verdict(verdict);
         if action == Action::Pause {
@@ -193,6 +227,9 @@ impl HttpContext for Stream {
             return Action::Continue;
         }
         if body_size > 16 * 1024 * 1024 {
+            return Self::refuse(413);
+        }
+        if self.inspects_request_body() && body_size > self.request_memory_limit {
             return Self::refuse(413);
         }
         if !end_of_stream {

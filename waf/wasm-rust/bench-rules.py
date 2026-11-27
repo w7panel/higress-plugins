@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / "skills/waf-envoy-test/assets/envoy.yaml"
 CATALOG = ROOT / "ui/system-rules.json"
 GATEWAY = "higress-registry.cn-hangzhou.cr.aliyuncs.com/higress/gateway:2.2.3"
+LEAK_BODY = b"<title>Index of /</title><h1>Index of /</h1>"
 
 
 class Upstream(BaseHTTPRequestHandler):
@@ -40,7 +41,24 @@ class Upstream(BaseHTTPRequestHandler):
         except BrokenPipeError:
             pass
 
+    def do_GET(self):
+        body = (LEAK_BODY if self.path.startswith("/leak")
+                else b"<html>" + b"a" * 16384 + b"</html>")
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        try:
+            self.wfile.write(body)
+        except BrokenPipeError:
+            pass
+
     def log_message(self, *_args):
+        pass
+
+
+class QuietServer(ThreadingHTTPServer):
+    def handle_error(self, _request, _client_address):
         pass
 
 
@@ -54,15 +72,18 @@ def stat(name, key):
     return int(match.group(1)) if match else 0
 
 
-def probe(port, body):
+def fetch(port, body, method="POST", path="/bench", headers=None):
     conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
     try:
-        conn.request("POST", "/bench", body, {"Content-Type": "application/x-www-form-urlencoded"})
+        conn.request(method, path, body, headers or {"Content-Type": "application/x-www-form-urlencoded"})
         response = conn.getresponse()
-        response.read()
-        return response.status
+        return response.status, response.read()
     finally:
         conn.close()
+
+
+def probe(port, body, method="POST", path="/bench", headers=None):
+    return fetch(port, body, method, path, headers)[0]
 
 
 def load(path, listener, name, port, version, config):
@@ -88,7 +109,7 @@ def load(path, listener, name, port, version, config):
     raise TimeoutError(f"LDS update {version} did not succeed")
 
 
-def bench(port, body, requests, concurrency):
+def bench(port, body, requests, concurrency, method="POST", path="/bench", headers=None):
     def worker(count):
         conn = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
         times = []
@@ -97,7 +118,7 @@ def bench(port, body, requests, concurrency):
             for _ in range(count):
                 start = time.perf_counter()
                 try:
-                    conn.request("POST", "/bench", body, {"Content-Type": "application/x-www-form-urlencoded"})
+                    conn.request(method, path, body, headers or {"Content-Type": "application/x-www-form-urlencoded"})
                     response = conn.getresponse()
                     response.read()
                     errors += response.status != 200
@@ -139,19 +160,22 @@ def main(args):
     listener = listener.replace("/etc/envoy/plugin.wasm", "/etc/envoy/dynamic/plugin.wasm")
     listener = listener.replace('direct_response: {status: 200, body: {inline_string: "upstream-ok"}}', 'route: {cluster: benchmark_upstream}')
     gateway_ip = docker("network", "inspect", "bridge", "--format", "{{(index .IPAM.Config 0).Gateway}}")
-    upstream = ThreadingHTTPServer((gateway_ip, 0), Upstream)
+    upstream = QuietServer((gateway_ip, 0), Upstream)
     threading.Thread(target=upstream.serve_forever, daemon=True).start()
     with tempfile.TemporaryDirectory(prefix="waf-rule-bench-") as temp:
         directory = Path(temp)
-        image = docker("create", args.image, "/plugin.wasm")
-        try:
-            docker("cp", f"{image}:/plugin.wasm", str(directory / "plugin.wasm"))
-        finally:
-            docker("rm", "-f", image)
+        if Path(args.image).is_file() and args.image.endswith(".wasm"):
+            (directory / "plugin.wasm").write_bytes(Path(args.image).read_bytes())
+        else:
+            image = docker("create", args.image, "/plugin.wasm")
+            try:
+                docker("cp", f"{image}:/plugin.wasm", str(directory / "plugin.wasm"))
+            finally:
+                docker("rm", "-f", image)
         (directory / "bootstrap.yaml").write_text(admin + f"node:\n  id: waf-rule-bench\n  cluster: local\ndynamic_resources:\n  lds_config:\n    path: /etc/envoy/dynamic/lds.yaml\nstatic_resources:\n  clusters:\n  - name: benchmark_upstream\n    type: STATIC\n    connect_timeout: 1s\n    load_assignment:\n      cluster_name: benchmark_upstream\n      endpoints:\n      - lb_endpoints:\n        - endpoint:\n            address:\n              socket_address: {{address: {gateway_ip}, port_value: {upstream.server_port}}}\n")
         lds = directory / "lds.yaml"
         lds.write_text("version_info: '0'\nresources:\n  - '@type': type.googleapis.com/envoy.config.listener.v3.Listener\n    name: local\n" + listener)
-        name = f"waf-rule-bench-{os.getpid()}"
+        name = f"waf-rule-bench-{os.getpid()}-{random.getrandbits(32):08x}"
         docker("run", "-d", "--name", name, "--cpus", "2", "--memory", "8g",
                "-p", "127.0.0.1::10000", "-v", f"{directory}:/etc/envoy/dynamic",
                "--entrypoint", "envoy", GATEWAY, "-c", "/etc/envoy/dynamic/bootstrap.yaml",
@@ -168,6 +192,24 @@ def main(args):
                 time.sleep(0.2)
             else:
                 raise TimeoutError("initial WAF listener did not become ready")
+            if args.mode == "smoke":
+                load(lds, listener, name, port, 1, {"useCRS": True, "paranoiaLevel": 1})
+                checks = [
+                    ("normal", "/normal", {}, 200),
+                    ("url-sqli", "/?id=1%27+OR+%271%27%3D%271", {}, 403),
+                    ("url-xss", "/?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E", {}, 403),
+                    ("header-scanner", "/normal", {"User-Agent": "sqlmap/1.0"}, 403),
+                ]
+                for label, path, headers, expected in checks:
+                    status = probe(port, b"", "GET", path, headers)
+                    print(f"{label}: {status} (expected {expected})", file=sys.stderr)
+                    if status != expected:
+                        raise AssertionError(label)
+                status, response = fetch(port, b"", "GET", "/leak")
+                print(f"response-leak: {status}, bytes={len(response)}, leaked={b'Index of /' in response}", file=sys.stderr)
+                if status != 200 or len(response) != len(LEAK_BODY) or any(response):
+                    raise AssertionError("response-leak")
+                return
             writer = csv.writer(sys.stdout, lineterminator="\n")
             writer.writerow(["mode", "id", "file", "payload", "body_bytes", "requests", "concurrency", "load_seconds", "rps", "p50_ms", "p95_ms", "errors", "attack_simple_status", "attack_head_status", "attack_tail_status"])
             cases = []
@@ -190,16 +232,19 @@ def main(args):
                     config = {"useCRS": True, "requestBodyAccess": True,
                               "paranoiaLevel": row["paranoiaLevel"] or 1,
                               "categories": {**categories, file: True}, "ruleStates": states}
-                    cases.append((str(row["id"]), row["file"], args.body_size, config))
+                    cases.append((str(row["id"]), row["file"], args.body_size if args.mode == "rules" else 0, config))
             for index, (label, file, size, config) in enumerate(cases, 1):
                 try:
                     started = time.monotonic()
                     load(lds, listener, name, port, index, config)
                     load_seconds = round(time.monotonic() - started, 2)
                     body = payload(size, args.payload)
+                    method = "GET" if args.mode == "nonbody" else "POST"
+                    request_path = "/bench?data=" + "a" * 1024 if args.mode == "nonbody" else "/bench"
+                    headers = {"X-Bench": "a" * 1024} if args.mode == "nonbody" else None
                     for _ in range(3):
-                        probe(port, body)
-                    rps, p50, p95, errors = bench(port, body, args.requests, args.concurrency)
+                        probe(port, body, method, request_path, headers)
+                    rps, p50, p95, errors = bench(port, body, args.requests, args.concurrency, method, request_path, headers)
                     simple = probe(port, b"id=1%27+OR+%271%27%3D%271") if args.mode == "body" else ""
                     head = probe(port, attack(size, False)) if args.mode == "body" and size >= 100 else ""
                     tail = probe(port, attack(size, True)) if args.mode == "body" and size >= 100 else ""
@@ -218,7 +263,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", choices=("body", "rules"))
+    parser.add_argument("mode", choices=("body", "rules", "nonbody", "smoke"))
     parser.add_argument("image")
     parser.add_argument("--body-size", type=int, default=16384)
     parser.add_argument("--requests", type=int, default=40)
@@ -236,6 +281,6 @@ if __name__ == "__main__":
                 parser.error("sizes must be nonnegative integers in body mode")
         except ValueError:
             parser.error("sizes must be comma-separated integers")
-    if options.ids and options.mode != "rules":
-        parser.error("ids is only valid in rules mode")
+    if options.ids and options.mode not in ("rules", "nonbody"):
+        parser.error("ids is only valid in rules and nonbody modes")
     main(options)
