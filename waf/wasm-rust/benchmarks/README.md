@@ -96,3 +96,27 @@ Go 的请求体写入错误现在停止转发；已知的 WASI 内存缓冲上�
 Go 的上述 POST 慢点仍可复现；筛查时 Go `920420`、`932290` 及 Rust `942460` 的高值在 40 次复测中消失。绝对延迟随测试时段明显变化，不能把两版几毫秒的中位差归因于规则引擎。Go 逐条测试期间 Kubernetes API 两次短暂返回 `ServiceUnavailable`/连接拒绝，脚本从断点续跑；同时观察到控制面其他 Pod 重建，无法据此判定与压测的因果关系。Gateway Pod 始终 Running、重启数 0，最终两个插件均恢复原测试规则和镜像。`kubectl top` 网关内存从开始的约 965 MiB、Go 第 383 条时约 1053 MiB，到全部结束并恢复配置后约 1017 MiB；两插件同驻，不能据此拆分各自内存。
 
 复现时运行 `python3 waf/wasm-rust/bench-218.py go --output go.csv`，再运行相同命令并将 `go` 改为 `rust`。脚本只修改两个对比 Ingress 对应的 WasmPlugin `matchRules[].config`，结束时按原值恢复；运行前确认 218 kubeconfig、网关 Pod 名、测试域名和目标配置仍与脚本一致。
+
+## 218 Rust 攻击特征请求（2026-11-27）
+
+使用与内置规则完全相同的 [CRS v4.30.0 回归样本](https://github.com/coreruleset/coreruleset/tree/v4.30.0/tests/regression/tests)（提交 `e03a4f6dabc7a30ebd8c52c97d28a154f590a48f`）。[`bench-218-attacks.py`](../bench-218-attacks.py) 复用上面的逐条配置和生效探针：每次只启用一个请求阶段规则，最多尝试 3 个明确写有该 ID `expect_ids` 的官方样本。Rust 不输出逐条命中 ID，因此对返回 403 的样本再单独关闭目标 ID；同一请求随后返回 200 才计为**目标规则导致的拦截**。对证实拦截的样本做并发 4、共 8 次重复请求。原始记录：[Rust 攻击样本 CSV](2026-11-27-218-rust-attacks.csv)。
+
+| 请求阶段目录 ID | 数量 |
+| --- | ---: |
+| 总计 | 396 |
+| 无法在当前 HTTP 客户端准确重放，或上游未给出该 ID 的命中样本 | 125 |
+| 可重放样本 | 271 |
+| 目标规则导致 403，关闭目标规则后为 200 | 238 |
+| 样本返回 200，当前无逐条命中日志，无法证明是否计分 | 28 |
+| 样本返回 400，关闭目标规则后仍为 400 | 5 |
+
+238 条已证实规则中，85 条使用了非空请求体，153 条使用无请求体请求；8 次重复请求全部是 403。它们的单规则 p50 中位数为 73.84 ms，p95 中位数为 111.89 ms，RPS 中位数为 45.7。耗时包含 `kubectl port-forward`、Python 客户端、配置切换后的测试窗口及网关链路，不代表 Rust 规则自身耗时。400 的 5 个样本是 `920100`、`920120`、`920121`、`920410`、`933111`；关闭目标规则后仍为 400，不能据此判定规则命中。200 的 28 条也不能判定漏检：有些 CRS 规则只增加异常分值，单独加载不会跨过拦截阈值。当前 Rust 插件缺少逐条命中日志，需要补充可观测性后才能验证这些规则的检测语义。响应阶段的 119 个目录 ID 需要可控上游响应，本轮没有重放；本测试也不等同于运行上游完整回归套件。
+
+一条样本包含未渲染模板和固定 `Content-Length`，直接重放会等待额外请求体；脚本跳过模板、显式长度、非 HTTP/1.1、编码原始报文和超出 128 KiB 的样本。运行前用 `python3 -m pip install PyYAML` 安装 YAML 解析器，再经 GitHub 代理检出上游样本：
+
+```sh
+git clone --depth 1 --branch v4.30.0 --single-branch 'https://gh-proxy.org/https://github.com/coreruleset/coreruleset.git' /tmp/crs-v4.30.0
+python3 waf/wasm-rust/bench-218-attacks.py rust --tests-dir /tmp/crs-v4.30.0/tests/regression/tests --output rust-attacks.csv
+```
+
+测试结束后已核对两个测试 WasmPlugin 的配置恢复，Gateway Pod 为 Running、重启 0。Rust 测试期间 `kubectl top` 观测到网关约 1015 MiB；这是 Go 和 Rust 两个插件同驻的 Pod 总量，不能拆分归因。2026-11-27 按部署要求将现有 `higress-system/w7panel-pluginwaf` 的 `spec.url` 从 Go 镜像 `0.1.3-crs4.30.0-131b885` 改为已在 218 测试入口验证的 Rust 镜像 `rust-0.1.3-crs4.30.0-131b885`；其他 `spec` 字段与切换前完全一致，Rust 源码自 `131b885` 后无变化。该插件绑定的对比入口验证正常 GET 200，自定义规则、URL SQLi/XSS、扫描器、表单 SQLi 403，256 KiB 表单体 413；Gateway 仍为 Running、重启 0。此时 `w7panel-pluginwaf` 和独立测试资源 `w7panel-wafrust` 均指向 Rust 镜像。
