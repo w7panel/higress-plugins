@@ -50,8 +50,8 @@ test('global save compiles CRS and inherited domain rules', async () => {
   assert.equal(plugin.spec.defaultConfig.secRules, undefined)
   assert.equal(plugin.spec.defaultConfig.ruleFiles, undefined)
   assert.equal(plugin.spec.defaultConfig.customRules[0].id, 1000000)
-  assert.equal(plugin.spec.defaultConfig.customRules[0].enabled, true)
-  assert.equal(plugin.spec.defaultConfig.policy.customRules[0].enabled, true)
+  assert.equal(plugin.spec.defaultConfig.customRules[0].enabled, false)
+  assert.equal(plugin.spec.defaultConfig.policy.customRules[0].enabled, false)
   assert.equal(plugin.spec.defaultConfig.w7Policy, undefined)
   assert.equal(plugin.spec.matchRules[0].config.useCRS, true)
   assert.equal(plugin.spec.matchRules[0].config.overrides.protectionMode, 'inherit')
@@ -61,34 +61,41 @@ test('global save compiles CRS and inherited domain rules', async () => {
   assert.equal(plugin.metadata.resourceVersion, '3')
 })
 
-test('custom rules follow protection mode for domains', () => {
+test('custom rules are off by default and can be enabled per domain', () => {
   const global = { protectionMode: 'observe', useCRS: true, categories: { 'REQUEST-942-APPLICATION-ATTACK-SQLI': false }, customRules: [{ id: 1000000, rule: 'SecRule REQUEST_URI "@streq /admin" "id:1000000,phase:1,deny"', enabled: true }] }
   const own = compile(global, { protectionMode: 'custom', categories: {}, enabledGlobalIds: [] })
-  assert.equal(own.customRules.length, 1)
+  assert.equal(own.customRules[0].enabled, false)
   assert.equal(own.categories['REQUEST-942-APPLICATION-ATTACK-SQLI'], false)
-  assert.equal(compile(global, { protectionMode: 'inherit', enabledGlobalIds: [] }).customRules.length, 1)
+  assert.equal(compile(global, { protectionMode: 'custom', customRuleStates: { 1000000: true } }).customRules[0].enabled, true)
+  assert.equal(compile(global, { protectionMode: 'inherit', customRuleStates: { 1000000: true } }).customRules[0].enabled, false)
   assert.equal(compile(global, { protectionMode: 'inherit' }).engineMode, 'DetectionOnly')
 })
 
-test('domain policy keeps category and body overrides independently of protection mode', () => {
+test('following global ignores domain settings and restores them in custom mode', () => {
   const global = { protectionMode: 'observe', useCRS: true, requestBodyAccess: false, paranoiaLevel: 1,
     categories: { 'REQUEST-942-APPLICATION-ATTACK-SQLI': false }, ruleStates: { 942100: false },
     customRules: [{ id: 1000000, rule: 'SecRule REQUEST_URI "@streq /admin" "id:1000000,phase:1,deny"', enabled: true }],
   }
   const own = { policyVersion: 2, protectionMode: 'inherit', useCRS: false, requestBodyAccess: true, paranoiaLevel: 2,
     categories: { 'REQUEST-942-APPLICATION-ATTACK-SQLI': true }, ruleStates: { 942100: true }, customRuleStates: { 1000000: false } }
-  assert.deepEqual(compile(global, own), { useCRS: true, requestBodyAccess: true, paranoiaLevel: 2,
-    categories: { 'REQUEST-942-APPLICATION-ATTACK-SQLI': true }, ruleStates: { 942100: true }, customRules: [{ ...global.customRules[0], enabled: true }], engineMode: 'DetectionOnly' })
+  assert.deepEqual(compile(global, own), { useCRS: true, requestBodyAccess: false, paranoiaLevel: 1,
+    categories: { 'REQUEST-942-APPLICATION-ATTACK-SQLI': false }, ruleStates: { 942100: false }, customRules: [{ ...global.customRules[0], enabled: false }], engineMode: 'DetectionOnly' })
   delete own.useCRS
   delete own.customRuleStates[1000000]
   assert.equal(compile(global, own).useCRS, true)
   assert.equal(compile(global, own).customRules.length, 1)
   own.protectionMode = 'custom'
   assert.equal(compile(global, own).engineMode, 'On')
+  assert.equal(compile(global, own).requestBodyAccess, true)
+  assert.equal(compile(global, own).paranoiaLevel, 2)
+  assert.equal(compile(global, own).categories['REQUEST-942-APPLICATION-ATTACK-SQLI'], true)
+  assert.equal(compile(global, own).ruleStates[942100], true)
+  own.customRuleStates[1000000] = true
+  assert.equal(compile(global, own).customRules[0].enabled, true)
   assert.equal(compile(global, { policyVersion: 2, customRuleStates: { 1000000: false } }).customRules.length, 1)
 })
 
-test('old per-rule and CRS switches are removed when domain policy is saved', async () => {
+test('old CRS switch is removed and custom rule state is preserved on domain save', async () => {
   const global = { protectionMode: 'observe', useCRS: true, customRules: [
     { id: 1000000, rule: 'SecRule REQUEST_URI "@streq /admin" "id:1000000,phase:1,deny"', enabled: true },
   ] }
@@ -101,15 +108,27 @@ test('old per-rule and CRS switches are removed when domain policy is saved', as
   } }
   let loaded = await loadWafConfig(props)
   assert.equal(loaded.overrides.useCRS, undefined)
-  assert.equal(loaded.overrides.customRuleStates, undefined)
+  assert.deepEqual(loaded.overrides.customRuleStates, {})
   assert.equal(compile(loaded.global, loaded.overrides).customRules.length, 1)
   await saveWafConfig(props, loaded.overrides)
   assert.equal(plugin.spec.matchRules[0].config.useCRS, true)
   assert.equal(plugin.spec.matchRules[0].config.overrides.enabledGlobalIds, undefined)
+  assert.deepEqual(plugin.spec.matchRules[0].config.overrides.customRuleStates, {})
+  loaded.overrides.protectionMode = 'custom'
+  loaded.overrides.customRuleStates[1000000] = true
+  await saveWafConfig(props, loaded.overrides)
+  assert.equal(plugin.spec.matchRules[0].config.customRules[0].enabled, true)
+  loaded.overrides.protectionMode = 'inherit'
+  await saveWafConfig(props, loaded.overrides)
+  assert.equal(plugin.spec.matchRules[0].config.customRules[0].enabled, false)
+  assert.equal(plugin.spec.matchRules[0].config.overrides.customRuleStates[1000000], true)
+  loaded.overrides.protectionMode = 'custom'
+  await saveWafConfig(props, loaded.overrides)
+  assert.equal(plugin.spec.matchRules[0].config.customRules[0].enabled, true)
   plugin.spec.matchRules[0].config.overrides = { protectionMode: 'custom', useCRS: false, enabledGlobalIds: [] }
   loaded = await loadWafConfig(props)
   assert.equal(loaded.overrides.useCRS, undefined)
-  assert.equal(loaded.overrides.customRuleStates, undefined)
+  assert.deepEqual(loaded.overrides.customRuleStates, {})
   assert.equal(compile(loaded.global, loaded.overrides).customRules.length, 1)
 })
 
@@ -130,10 +149,16 @@ test('global save recompiles domains with independent overrides', async () => {
   assert.equal(rule.config.engineMode, 'DetectionOnly')
   assert.equal(rule.config.useCRS, true)
   assert.equal(rule.config.customRules.length, 1)
+  assert.equal(rule.config.customRules[0].enabled, false)
+  assert.deepEqual(rule.config.overrides.customRuleStates, { 1000000: false })
   assert.equal(rule.config.overrides.enabledGlobalIds, undefined)
   global.protectionMode = 'disabled'
   await saveWafConfig(props, global)
   assert.equal(plugin.spec.matchRules[0].configDisable, true)
+  assert.deepEqual(plugin.spec.matchRules[0].config.overrides.customRuleStates, { 1000000: false })
+  global.customRules = []
+  await saveWafConfig(props, global)
+  assert.deepEqual(plugin.spec.matchRules[0].config.overrides.customRuleStates, {})
 })
 
 test('policy categories and domain selections load without a file suffix', async () => {

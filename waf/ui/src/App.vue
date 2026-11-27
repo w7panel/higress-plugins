@@ -2,49 +2,42 @@
   <main class="waf-page">
     <h2 class="page-title">{{ scope === 'rule' ? `域名 WAF 配置：${domain}` : '全局 WAF 配置' }}</h2>
     <div class="protection-summary">
-      <div class="setting-heading"><strong>防护模式</strong><span>统一控制 WAF 规则的执行方式</span></div>
-      <a-select v-if="scope === 'global'" v-model="globalProtectionMode" class="mode-select"><a-option value="disabled">关闭</a-option><a-option value="custom">自定义开启</a-option><a-option value="observe">仅观察</a-option></a-select>
-      <a-select v-else :model-value="overrideProtectionMode" class="mode-select" @change="setProtectionMode"><a-option value="inherit">跟随全局（{{ modeName(globalProtectionMode) }}）</a-option><a-option value="disabled">关闭</a-option><a-option value="custom">自定义开启</a-option><a-option value="observe">仅观察</a-option></a-select>
-      <div class="effective-summary">当前状态：<strong>{{ modeName(effectiveMode) }}</strong><span>自定义规则：{{ effectiveCustomRuleCount }} 条</span></div>
+      <div class="setting-heading"><strong>防护开关</strong><span>选择此配置的防护方式</span></div>
+      <a-select v-if="scope === 'global'" v-model="globalProtectionMode" class="mode-select"><a-option value="disabled">禁用</a-option><a-option value="custom">开启自定义配置</a-option><a-option value="observe">仅观察</a-option></a-select>
+      <a-select v-else :model-value="overrideProtectionMode" class="mode-select" @change="setProtectionMode"><a-option value="inherit">跟随全局配置（{{ modeName(globalProtectionMode) }}）</a-option><a-option value="disabled">禁用</a-option><a-option value="custom">开启自定义配置</a-option><a-option value="observe">仅观察</a-option></a-select>
+      <div class="effective-summary">当前状态：<strong>{{ modeName(effectiveMode) }}</strong><span>{{ scope === 'rule' ? '已启用' : '已配置' }}自定义规则：{{ effectiveCustomRuleCount }} 条</span></div>
       <p v-if="effectiveMode === 'disabled'" class="setting-note">当前不执行规则；下面的配置会在开启防护后生效。</p>
       <p v-else-if="effectiveMode === 'observe'" class="setting-note">仅观察命中，不拦截请求。</p>
     </div>
     <a-tabs v-model:active-key="tab">
       <a-tab-pane key="system" title="系统规则">
         <div class="setting-row">
-          <div class="setting-heading"><strong>防护强度</strong><span>{{ ['极少误报，适合多数业务。', '少量误报，适合较高安全要求。', '较多误报，需调整业务规则。', '大量误报，上线前需充分验证。'][paranoiaLevel - 1] }}</span></div>
-          <span v-if="scope === 'rule'" class="source-label">{{ ownParanoiaLevel === null ? '跟随全局' : '域名覆盖' }}</span>
-          <a-select :model-value="paranoiaLevel" class="strength-select" @change="setParanoiaLevel"><a-option v-for="(name, index) in ['平衡', '增强', '严格', '极限']" :key="index" :value="index + 1">{{ name }}（PL{{ index + 1 }}）</a-option></a-select>
-          <a-link v-if="scope === 'rule' && ownParanoiaLevel !== null" @click="clearParanoiaLevel">恢复跟随</a-link>
+          <div class="setting-heading"><strong>防护强度</strong><span>{{ ['极少误报，绝大多数业务、新手、多站点托管，生产首选。', '少量误报，安全要求偏高、能接受少量自定义调整。', '较多误报，高安全业务（金融、内部系统）。', '大量误报，极高安全隔离环境，上线前必须大量白名单豁免。'][effectiveParanoiaLevel - 1] }}</span></div>
+          <a-select :model-value="effectiveParanoiaLevel" :disabled="followingGlobal" class="strength-select" @change="setParanoiaLevel"><a-option v-for="(name, index) in ['平衡', '增强', '严格', '极限']" :key="index" :value="index + 1">{{ name }}（PL{{ index + 1 }}）</a-option></a-select>
         </div>
         <a-table :columns="systemColumns" :data="categories" :pagination="false" :expandable="{}" row-key="name">
           <template #expand-row="{ record }">
             <a-table :columns="ruleColumns" :data="categoryRules(record.name)" :pagination="false" row-key="id">
               <template #ruleEnabled="{ record: rule }">
-                <span v-if="scope === 'rule'" class="source-label">{{ Object.hasOwn(ruleOverrides, rule.id) ? '域名覆盖' : '跟随全局' }}</span>
-                <a-switch :model-value="ruleEnabled(rule.id)" :disabled="!categoryEnabled(rule.file)" @change="value => setRuleState(rule.id, value)" />
-                <a-link v-if="scope === 'rule' && Object.hasOwn(ruleOverrides, rule.id)" @click="clearRuleState(rule.id)">恢复跟随</a-link>
+                <a-switch :model-value="ruleEnabled(rule.id)" :disabled="followingGlobal || !categoryEnabled(rule.file)" @change="value => setRuleState(rule.id, value)" />
               </template>
             </a-table>
           </template>
           <template #enabled="{ record }">
-            <span v-if="scope === 'rule'" class="source-label">{{ Object.hasOwn(overrides, record.name) ? '域名覆盖' : '跟随全局' }}</span>
-            <a-switch :model-value="categoryEnabled(record.name)" @change="value => setCategory(record.name, value)" />
-            <a-link v-if="scope === 'rule' && Object.hasOwn(overrides, record.name)" @click="clearCategory(record.name)">恢复跟随</a-link>
+            <a-switch :model-value="categoryEnabled(record.name)" :disabled="followingGlobal" @change="value => setCategory(record.name, value)" />
           </template>
         </a-table>
       </a-tab-pane>
       <a-tab-pane key="custom" title="自定义规则">
         <div class="setting-row">
           <div class="setting-heading"><strong>读取请求体</strong><span>仅当自定义规则使用 REQUEST_BODY 或 POST 表单参数时开启；可能增加内存占用。</span></div>
-          <span v-if="scope === 'rule'" class="source-label">{{ requestBodyAccessOverride === null ? '跟随全局' : '域名覆盖' }}</span>
-          <a-switch :model-value="effectiveRequestBodyAccess" @change="setRequestBodyAccess" />
-          <a-link v-if="scope === 'rule' && requestBodyAccessOverride !== null" @click="requestBodyAccessOverride = null">恢复跟随</a-link>
+          <a-switch :model-value="effectiveRequestBodyAccess" :disabled="followingGlobal" @change="setRequestBodyAccess" />
         </div>
         <a-button v-if="scope === 'global'" :disabled="!!inlineDraft" @click="startInlineAdd">添加规则</a-button>
         <a-table :columns="customColumns" :data="visibleRules" :pagination="false" row-key="key">
           <template #id="{ record }"><span v-if="record.draft" class="id-entry"><strong v-if="inlineDraft.editingId">{{ inlineDraft.editingId }}</strong><template v-else><strong>100</strong><a-input v-model="inlineDraft.suffix" :max-length="4" placeholder="后四位" /></template></span><span v-else>{{ record.id }}</span></template>
           <template #rule="{ record }"><a-textarea v-if="record.draft" v-model="inlineDraft.rule" :auto-size="{ minRows: 3, maxRows: 8 }" placeholder='SecRule REQUEST_URI "@streq /admin" "id:1000000,phase:1,deny"' /><code v-else>{{ record.rule }}</code></template>
+          <template #enabled="{ record }"><a-switch v-if="!record.draft && scope === 'rule'" :model-value="customRuleEnabled(record.id)" :disabled="followingGlobal" @change="value => setCustomRuleState(record.id, value)" /><span v-else-if="!record.draft">域名中配置</span></template>
           <template #operation="{ record }">
             <template v-if="record.draft"><a-link @click="saveInlineRule">确定</a-link><a-link @click="inlineDraft = null">取消</a-link></template>
             <template v-if="scope === 'global' && !record.draft">
@@ -115,21 +108,23 @@ const props = () => window.$wujie?.props || {}
 export default {
   data() {
     return {
-      categories: [], systemRules: [], globalRuleStates: {}, ruleOverrides: {}, inlineDraft: null, paranoiaLevel: 1, ownParanoiaLevel: null, globalParanoiaLevel: 1, globalProtectionMode: 'disabled', overrideProtectionMode: 'inherit', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+      categories: [], systemRules: [], globalRuleStates: {}, ruleOverrides: {}, customRuleStates: {}, inlineDraft: null, paranoiaLevel: 1, ownParanoiaLevel: null, globalParanoiaLevel: 1, globalProtectionMode: 'disabled', overrideProtectionMode: 'inherit', methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
       tab: 'system', scope: 'global', domain: '',
       globalRequestBodyAccess: false, requestBodyAccessOverride: null, globalCategories: {}, overrides: {}, globalRules: [], customRules: [],
       visualForm: { id: 1000000, type: 'pathExact', value: '', header: '', variable: '', operator: '', actions: 'phase:1,deny,status:403', extraConditions: [] },
       editingKey: '', saving: false, loadingLogs: false, checkingMetrics: false, hasMetrics: false, metricsError: '', logs: [],
       systemColumns: [{ title: '防护类别', dataIndex: 'titleZh' }, { title: '状态', slotName: 'enabled', width: 230 }],
       ruleColumns: [{ title: 'ID', dataIndex: 'id', width: 100 }, { title: '防护名称', dataIndex: 'nameZh' }, { title: '严格程度', dataIndex: 'paranoiaLevel', render: ({ record }) => record.paranoiaLevel ? `PL${record.paranoiaLevel}` : '默认', width: 100 }, { title: '状态', slotName: 'ruleEnabled', width: 230 }],
-      customColumns: [{ title: '规则 ID', slotName: 'id', width: 130 }, { title: 'SecRule', slotName: 'rule' }, { title: '操作', slotName: 'operation', width: 140 }],
+      customColumns: [{ title: '规则 ID', slotName: 'id', width: 130 }, { title: 'SecRule', slotName: 'rule' }, { title: '启用', slotName: 'enabled', width: 100 }, { title: '操作', slotName: 'operation', width: 140 }],
       logColumns: [{ title: '时间', dataIndex: 'time' }, { title: '域名', dataIndex: 'domain' }, { title: '路径', dataIndex: 'path' }, { title: '状态码', dataIndex: 'status' }],
     }
   },
   computed: {
-    effectiveMode() { return this.scope === 'rule' && this.overrideProtectionMode !== 'inherit' ? this.overrideProtectionMode : this.globalProtectionMode },
-    effectiveRequestBodyAccess() { return this.scope === 'rule' && this.requestBodyAccessOverride !== null ? this.requestBodyAccessOverride : this.globalRequestBodyAccess },
-    effectiveCustomRuleCount() { return (this.scope === 'rule' ? this.globalRules : this.customRules).length },
+    followingGlobal() { return this.scope === 'rule' && this.overrideProtectionMode === 'inherit' },
+    effectiveMode() { return this.scope === 'rule' && !this.followingGlobal ? this.overrideProtectionMode : this.globalProtectionMode },
+    effectiveRequestBodyAccess() { return this.scope === 'rule' && !this.followingGlobal && this.requestBodyAccessOverride !== null ? this.requestBodyAccessOverride : this.globalRequestBodyAccess },
+    effectiveParanoiaLevel() { return this.scope === 'rule' && !this.followingGlobal ? this.ownParanoiaLevel ?? this.globalParanoiaLevel : this.globalParanoiaLevel },
+    effectiveCustomRuleCount() { return this.scope === 'global' ? this.customRules.length : this.followingGlobal ? 0 : this.globalRules.filter(rule => this.customRuleStates[rule.id] === true).length },
     visibleRules() {
       const rows = (this.scope === 'rule' ? this.globalRules : this.customRules)
         .filter(item => item.id !== this.inlineDraft?.editingId)
@@ -141,13 +136,12 @@ export default {
   created() { this.load() },
   watch: { tab(value) { if (value === 'logs') this.loadLogs() } },
   methods: {
-    modeName(mode) { return { disabled: '关闭', custom: '自定义开启', observe: '仅观察' }[mode] || '关闭' },
+    modeName(mode) { return { disabled: '禁用', custom: '开启自定义配置', observe: '仅观察' }[mode] || '禁用' },
     setProtectionMode(value) { this.overrideProtectionMode = value },
     setParanoiaLevel(value) {
       this.paranoiaLevel = value
       if (this.scope === 'rule') this.ownParanoiaLevel = value
     },
-    clearParanoiaLevel() { this.ownParanoiaLevel = null; this.paranoiaLevel = this.globalParanoiaLevel },
     setRequestBodyAccess(value) {
       if (this.scope === 'rule') this.requestBodyAccessOverride = value
       else this.globalRequestBodyAccess = value
@@ -165,6 +159,7 @@ export default {
         this.systemRules = Array.isArray(data.catalog?.rules) ? data.catalog.rules.filter(rule => !rule.internal && rule.message) : []
         this.globalRuleStates = clone(data.global?.ruleStates)
         this.ruleOverrides = clone(data.overrides?.ruleStates)
+        this.customRuleStates = clone(data.overrides?.customRuleStates)
         this.inlineDraft = null
         this.globalParanoiaLevel = data.global?.paranoiaLevel || 1
         this.ownParanoiaLevel = data.overrides?.paranoiaLevel ?? null
@@ -179,24 +174,24 @@ export default {
       } catch (error) { this.$message.error(error?.message || '加载 WAF 配置失败') }
     },
     categoryEnabled(id) {
-      return this.scope === 'rule' && Object.hasOwn(this.overrides, id)
+      return this.scope === 'rule' && !this.followingGlobal && Object.hasOwn(this.overrides, id)
         ? this.overrides[id] : this.globalCategories[id] !== false
     },
     setCategory(id, value) {
       if (this.scope === 'rule') this.overrides[id] = value
       else this.globalCategories[id] = value
     },
-    clearCategory(id) { delete this.overrides[id] },
     categoryRules(name) { return this.systemRules.filter(rule => rule.file === name) },
     ruleEnabled(id) {
-      return this.scope === 'rule' && Object.hasOwn(this.ruleOverrides, id)
+      return this.scope === 'rule' && !this.followingGlobal && Object.hasOwn(this.ruleOverrides, id)
         ? this.ruleOverrides[id] : this.globalRuleStates[id] !== false
     },
     setRuleState(id, enabled) {
       if (this.scope === 'rule') this.ruleOverrides[id] = enabled
       else this.globalRuleStates[id] = enabled
     },
-    clearRuleState(id) { delete this.ruleOverrides[id] },
+    customRuleEnabled(id) { return !this.followingGlobal && this.customRuleStates[id] === true },
+    setCustomRuleState(id, enabled) { this.customRuleStates[id] = enabled },
     startInlineAdd() {
       let id = 1000000
       const used = new Set(this.customRules.map(rule => rule.id))
@@ -209,7 +204,7 @@ export default {
       if (this.inlineDraft.editingId && !this.customRules.some(entry => entry.id === id)) return this.$message.error('待编辑规则已不存在')
       const rule = replaceRuleId(this.inlineDraft.rule.trim(), id)
       if (!rule) return this.$message.error('规则内容需要包含 id 动作')
-      const item = { id, rule, enabled: true }
+      const item = { id, rule, enabled: false }
       const current = this.customRules.filter(entry => entry.id !== this.inlineDraft.editingId)
       const error = validateCustomRules([...current, item])
       if (error) return this.$message.error(error)
@@ -248,7 +243,7 @@ export default {
       const current = this.customRules.filter(rule => `rule-${rule.id}` !== this.editingKey)
       const error = validateCustomRules([...current, item])
       if (error) return this.$message.error(error)
-      this.customRules = [...current, { ...item, enabled: true }]
+      this.customRules = [...current, { ...item, enabled: false }]
       this.resetEditor()
     },
     removeRule(key) {
@@ -262,7 +257,7 @@ export default {
       this.saving = true
       try {
         await saveWafConfig(props(), this.scope === 'rule'
-          ? { protectionMode: this.overrideProtectionMode, requestBodyAccess: this.requestBodyAccessOverride, categories: this.overrides, ruleStates: this.ruleOverrides, paranoiaLevel: this.ownParanoiaLevel }
+          ? { protectionMode: this.overrideProtectionMode, requestBodyAccess: this.requestBodyAccessOverride, categories: this.overrides, ruleStates: this.ruleOverrides, customRuleStates: this.customRuleStates, paranoiaLevel: this.ownParanoiaLevel }
           : { protectionMode: this.globalProtectionMode, requestBodyAccess: this.globalRequestBodyAccess, categories: this.globalCategories, ruleStates: this.globalRuleStates, customRules: this.customRules, paranoiaLevel: this.paranoiaLevel })
         this.$message.success('保存成功')
         await this.load()
@@ -306,7 +301,6 @@ body { margin: 0; color: #1d2129; font-family: -apple-system, BlinkMacSystemFont
 .effective-summary span { color: #4e5969; }
 .setting-note { margin: 10px 0 0; }
 .inactive-note { padding: 10px 12px; color: #4e5969; background: #f7f8fa; border-radius: 4px; }
-.source-label { display: inline-block; margin-right: 8px; color: #4e5969; font-size: 12px; white-space: nowrap; }
 .arco-table .arco-link { margin-left: 8px; }
 .section-title { margin: 22px 0 10px; font-weight: 600; }
 .rule-input, .log-table { margin: 16px 0; }
