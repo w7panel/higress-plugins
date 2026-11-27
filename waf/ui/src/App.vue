@@ -9,6 +9,10 @@
       <p v-if="effectiveMode === 'disabled'" class="setting-note">当前不执行规则；下面的配置会在开启防护后生效。</p>
       <p v-else-if="effectiveMode === 'observe'" class="setting-note">仅观察命中，不拦截请求。</p>
     </div>
+    <div v-if="tab !== 'logs'" class="setting-row">
+      <div class="setting-heading"><strong>读取请求体</strong><span>系统或自定义规则需要检查 POST 表单参数、REQUEST_BODY 等请求体内容时开启；可能增加内存占用。</span></div>
+      <a-switch :model-value="effectiveRequestBodyAccess" :disabled="followingGlobal" @change="setRequestBodyAccess" />
+    </div>
     <a-tabs v-model:active-key="tab">
       <a-tab-pane key="system" title="系统规则">
         <div class="setting-row">
@@ -29,10 +33,6 @@
         </a-table>
       </a-tab-pane>
       <a-tab-pane key="custom" title="自定义规则">
-        <div class="setting-row">
-          <div class="setting-heading"><strong>读取请求体</strong><span>仅当自定义规则使用 REQUEST_BODY 或 POST 表单参数时开启；可能增加内存占用。</span></div>
-          <a-switch :model-value="effectiveRequestBodyAccess" :disabled="followingGlobal" @change="setRequestBodyAccess" />
-        </div>
         <a-button v-if="scope === 'global'" :disabled="!!inlineDraft" @click="startInlineAdd">添加规则</a-button>
         <a-table :columns="customColumns" :data="visibleRules" :pagination="false" row-key="key">
           <template #id="{ record }"><span v-if="record.draft" class="id-entry"><strong v-if="inlineDraft.editingId">{{ inlineDraft.editingId }}</strong><template v-else><strong>100</strong><a-input v-model="inlineDraft.suffix" :max-length="4" placeholder="后四位" /></template></span><span v-else>{{ record.id }}</span></template>
