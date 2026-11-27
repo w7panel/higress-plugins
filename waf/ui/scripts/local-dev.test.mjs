@@ -36,8 +36,8 @@ test('standalone WAF reads and saves WasmPlugin through k8sproxy', async () => {
 })
 
 test('global save compiles CRS and inherited domain rules', async () => {
-  let plugin = { metadata: { resourceVersion: '3' }, spec: { defaultConfig: { useCRS: false }, matchRules: [
-    { ingress: ['default/site'], config: { w7Overrides: { protectionMode: 'custom', useCRS: false, enabledGlobalIds: [] } } },
+  let plugin = { metadata: { resourceVersion: '3' }, spec: { defaultConfig: { useCRS: false, w7Policy: { protectionMode: 'observe' } }, matchRules: [
+    { ingress: ['default/site'], config: { w7Overrides: { protectionMode: 'custom' } } },
   ] } }
   const props = { configScope: 'global', k8sproxy: async (_, init) => {
     if (init?.method === 'PUT') { plugin = JSON.parse(init.body); return { ok: true, status: 200, json: async () => plugin } }
@@ -51,7 +51,11 @@ test('global save compiles CRS and inherited domain rules', async () => {
   assert.equal(plugin.spec.defaultConfig.ruleFiles, undefined)
   assert.equal(plugin.spec.defaultConfig.customRules[0].id, 1000000)
   assert.equal(plugin.spec.defaultConfig.customRules[0].enabled, true)
+  assert.equal(plugin.spec.defaultConfig.policy.customRules[0].enabled, true)
+  assert.equal(plugin.spec.defaultConfig.w7Policy, undefined)
   assert.equal(plugin.spec.matchRules[0].config.useCRS, true)
+  assert.equal(plugin.spec.matchRules[0].config.overrides.protectionMode, 'inherit')
+  assert.equal(plugin.spec.matchRules[0].config.w7Overrides, undefined)
   assert.equal(plugin.spec.matchRules[0].config.secRules, undefined)
   assert.equal(plugin.metadata.resourceVersion, '3')
 })
@@ -87,8 +91,8 @@ test('old per-rule and CRS switches are removed when domain policy is saved', as
   const global = { protectionMode: 'observe', useCRS: true, customRules: [
     { id: 1000000, rule: 'SecRule REQUEST_URI "@streq /admin" "id:1000000,phase:1,deny"', enabled: true },
   ] }
-  let plugin = { spec: { defaultConfig: { w7Policy: global }, matchRules: [
-    { ingress: ['default/site'], config: { w7Overrides: { protectionMode: 'inherit', useCRS: false, enabledGlobalIds: [] } } },
+  let plugin = { spec: { defaultConfig: { policy: global }, matchRules: [
+    { ingress: ['default/site'], config: { overrides: { protectionMode: 'inherit', useCRS: false, enabledGlobalIds: [] } } },
   ] } }
   const props = { configScope: 'rule', namespace: 'default', ingressName: 'site', k8sproxy: async (path, init) => {
     if (init?.method === 'PUT') { plugin = JSON.parse(init.body); return { ok: true, status: 200, json: async () => plugin } }
@@ -100,8 +104,8 @@ test('old per-rule and CRS switches are removed when domain policy is saved', as
   assert.equal(compile(loaded.global, loaded.overrides).customRules.length, 1)
   await saveWafConfig(props, loaded.overrides)
   assert.equal(plugin.spec.matchRules[0].config.useCRS, true)
-  assert.equal(plugin.spec.matchRules[0].config.w7Overrides.enabledGlobalIds, undefined)
-  plugin.spec.matchRules[0].config.w7Overrides = { protectionMode: 'custom', useCRS: false, enabledGlobalIds: [] }
+  assert.equal(plugin.spec.matchRules[0].config.overrides.enabledGlobalIds, undefined)
+  plugin.spec.matchRules[0].config.overrides = { protectionMode: 'custom', useCRS: false, enabledGlobalIds: [] }
   loaded = await loadWafConfig(props)
   assert.equal(loaded.overrides.useCRS, undefined)
   assert.equal(loaded.overrides.customRuleStates, undefined)
@@ -109,7 +113,7 @@ test('old per-rule and CRS switches are removed when domain policy is saved', as
 })
 
 test('global save recompiles domains with independent overrides', async () => {
-  let plugin = { spec: { defaultConfig: {}, matchRules: [{ ingress: ['default/site'], config: { w7Overrides: {
+  let plugin = { spec: { defaultConfig: {}, matchRules: [{ ingress: ['default/site'], config: { overrides: {
     policyVersion: 2, protectionMode: 'inherit', useCRS: false, customRuleStates: { 1000000: false },
   } } }] } }
   const props = { configScope: 'global', k8sproxy: async (_, init) => {
@@ -125,22 +129,39 @@ test('global save recompiles domains with independent overrides', async () => {
   assert.equal(rule.config.engineMode, 'DetectionOnly')
   assert.equal(rule.config.useCRS, true)
   assert.equal(rule.config.customRules.length, 1)
-  assert.equal(rule.config.w7Overrides.enabledGlobalIds, undefined)
+  assert.equal(rule.config.overrides.enabledGlobalIds, undefined)
   global.protectionMode = 'disabled'
   await saveWafConfig(props, global)
   assert.equal(plugin.spec.matchRules[0].configDisable, true)
 })
 
 test('policy categories and domain selections load without a file suffix', async () => {
-  const plugin = { spec: { defaultConfigDisable: false, defaultConfig: { useCRS: true, w7Policy: {
+  const plugin = { spec: { defaultConfigDisable: false, defaultConfig: { useCRS: true, policy: {
     categories: { 'REQUEST-942-APPLICATION-ATTACK-SQLI': false }, customRules: [{ id: 1000000, rule: 'SecRule REQUEST_URI "@streq /admin" "id:1000000,phase:1,deny"', enabled: true }],
-  } }, matchRules: [{ ingress: ['default/site'], config: { w7Overrides: { protectionMode: 'custom', enabledGlobalIds: [], categories: { 'REQUEST-941-APPLICATION-ATTACK-XSS': false } } } }] } }
+  } }, matchRules: [{ ingress: ['default/site'], config: { overrides: { protectionMode: 'custom', enabledGlobalIds: [], categories: { 'REQUEST-941-APPLICATION-ATTACK-XSS': false } } } }] } }
   const props = { configScope: 'rule', namespace: 'default', ingressName: 'site', k8sproxy: async path => ({ ok: true, status: 200, json: async () => path.includes('/ingresses/') ? { spec: { rules: [{ host: 'site.example' }] } } : plugin }) }
   const loaded = await loadWafConfig(props)
   assert.equal(loaded.global.categories['REQUEST-942-APPLICATION-ATTACK-SQLI'], false)
   assert.equal(loaded.overrides.categories['REQUEST-941-APPLICATION-ATTACK-XSS'], false)
   assert.equal(loaded.overrides.enabledGlobalIds, undefined)
   assert.equal(loaded.overrides.protectionMode, 'custom')
+})
+
+test('old policy field names are ignored and removed on domain save', async () => {
+  let plugin = { spec: { defaultConfig: { w7Policy: { protectionMode: 'observe' } }, matchRules: [
+    { ingress: ['default/site'], config: { w7Overrides: { protectionMode: 'custom' } } },
+  ] } }
+  const props = { configScope: 'rule', namespace: 'default', ingressName: 'site', k8sproxy: async (path, init) => {
+    if (init?.method === 'PUT') { plugin = JSON.parse(init.body); return { ok: true, status: 200, json: async () => plugin } }
+    return { ok: true, status: 200, json: async () => path.includes('/ingresses/') ? { spec: { rules: [{ host: 'site.example' }] } } : structuredClone(plugin) }
+  } }
+  const loaded = await loadWafConfig(props)
+  assert.equal(loaded.global.protectionMode, 'disabled')
+  assert.equal(loaded.overrides.protectionMode, 'inherit')
+  await saveWafConfig(props, { protectionMode: 'custom' })
+  assert.equal(plugin.spec.defaultConfig.w7Policy, undefined)
+  assert.equal(plugin.spec.matchRules[0].config.w7Overrides, undefined)
+  assert.equal(plugin.spec.matchRules[0].config.overrides.protectionMode, 'custom')
 })
 
 test('invalid rules and Kubernetes conflicts stop save', async () => {

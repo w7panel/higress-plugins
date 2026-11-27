@@ -60,7 +60,7 @@ func TestParseConfigSharesIdenticalWAF(t *testing.T) {
 		out *WafConfig
 	}{
 		{`{"useCRS":true}`, &first},
-		{`{"useCRS":true,"w7Policy":{"unrelated":true}}`, &same},
+		{`{"useCRS":true,"policy":{"unrelated":true}}`, &same},
 		{`{"useCRS":true,"ruleStates":{"942100":false}}`, &changed},
 	} {
 		if err := parseConfig(ctx, gjson.Parse(test.json), test.out); err != nil {

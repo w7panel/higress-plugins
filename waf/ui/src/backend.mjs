@@ -45,7 +45,7 @@ function domainPolicy(value) {
 }
 function globalConfig(plugin) {
   const config = plugin.spec?.defaultConfig || {}
-  const global = policy(config.w7Policy)
+  const global = policy(config.policy)
   global.useCRS = true
   global.customRules = global.customRules.map(rule => ({ ...rule, enabled: true }))
   if (!global.protectionMode) global.protectionMode = 'disabled'
@@ -81,7 +81,7 @@ export async function loadWafConfig(props) {
   const { global } = globalConfig(plugin)
   const rules = plugin.spec?.matchRules || []
   const config = rules[findRule(rules, target)]?.config || {}
-  const overrides = domainPolicy(config.w7Overrides)
+  const overrides = domainPolicy(config.overrides)
   return { global, overrides, catalog: uiCatalog }
 }
 
@@ -96,23 +96,26 @@ export async function saveWafConfig(props, input) {
     const global = policy(input)
     global.useCRS = true
     global.customRules = global.customRules.map(rule => ({ ...rule, enabled: true }))
-    Object.assign(config, compile(global), { w7Policy: global })
+    Object.assign(config, compile(global), { policy: global })
+    delete config.w7Policy
     for (const key of ['ruleFiles', 'secRules']) delete config[key]
     delete config.w7LegacyRules
     spec.defaultConfig = config
     spec.defaultConfigDisable = global.protectionMode === 'disabled'
     for (const rule of rules) {
-      if (!rule.config?.w7Overrides) continue
-      const overrides = policy(rule.config.w7Overrides)
+      if (!rule.config?.overrides && !rule.config?.w7Overrides) continue
+      const overrides = policy(rule.config.overrides)
       delete overrides.useCRS
       delete overrides.customRuleStates
       delete overrides.enabledGlobalIds
       if (!overrides.protectionMode) overrides.protectionMode = 'inherit'
-      Object.assign(rule.config, compile(global, overrides), { w7Overrides: overrides })
+      Object.assign(rule.config, compile(global, overrides), { overrides })
+      delete rule.config.w7Overrides
       for (const key of ['ruleFiles', 'secRules']) delete rule.config[key]
       rule.configDisable = (overrides.protectionMode === 'inherit' ? global.protectionMode : overrides.protectionMode) === 'disabled'
     }
   } else {
+    delete config.w7Policy
     const overrides = domainPolicy(input)
     overrides.policyVersion = 2
     if (!overrides.protectionMode) overrides.protectionMode = 'inherit'
@@ -136,7 +139,8 @@ export async function saveWafConfig(props, input) {
       }
     }
     const rule = rules[index]
-    rule.config = { ...rule.config, ...compiled, w7Overrides: overrides }
+    rule.config = { ...rule.config, ...compiled, overrides }
+    delete rule.config.w7Overrides
     for (const key of ['ruleFiles', 'secRules']) delete rule.config[key]
     rule.configDisable = (overrides.protectionMode === 'inherit' ? savedGlobal.protectionMode : overrides.protectionMode) === 'disabled'
   }

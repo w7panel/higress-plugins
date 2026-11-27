@@ -22,7 +22,7 @@ spec:
     useCRS: true
     paranoiaLevel: 1
     engineMode: "On"
-    w7Policy:
+    policy:
       protectionMode: disabled
       useCRS: true
       paranoiaLevel: 1
