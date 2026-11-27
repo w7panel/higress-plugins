@@ -25,7 +25,7 @@ test('standalone WAF reads and saves WasmPlugin through k8sproxy', async () => {
   initLocalWaf()
   const props = window.$wujie.props
   const loaded = await loadWafConfig(props)
-  assert.equal(loaded.global.useCRS, true)
+  assert.equal(loaded.global.useCRS, undefined)
   assert.ok(loaded.catalog.rules.length > 600)
   await saveWafConfig(props, { protectionMode: 'inherit', useCRS: false, categories: {}, ruleStates: {}, enabledGlobalIds: [] })
   assert.deepEqual(plugin.spec.matchRules.map(rule => rule.ingress), [['default/other'], ['default/site']])
@@ -51,6 +51,8 @@ test('global save compiles CRS and inherited domain rules', async () => {
   assert.equal(plugin.spec.defaultConfig.ruleFiles, undefined)
   assert.equal(plugin.spec.defaultConfig.customRules[0].id, 1000000)
   assert.equal(plugin.spec.defaultConfig.customRules[0].enabled, false)
+  assert.equal(plugin.spec.defaultConfig.useCRS, true)
+  assert.equal(plugin.spec.defaultConfig.policy.useCRS, undefined)
   assert.equal(plugin.spec.defaultConfig.policy.customRules[0].enabled, false)
   assert.equal(plugin.spec.defaultConfig.w7Policy, undefined)
   assert.equal(plugin.spec.matchRules[0].config.useCRS, true)

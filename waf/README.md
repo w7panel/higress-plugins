@@ -10,7 +10,7 @@
 - `VERSION=0.1.0-crs4.30.0-verified make build-image` 构建 `ccr.ccs.tencentyun.com/afan-public/w7panel-waf:<版本>`；`make push-image` 推送。构建固定使用 Higress Go 1.24.4、Coraza 3.3.3、`no_fs_access` 标签和 `https://goproxy.cn,direct` 模块镜像。`make build-rust-image` 使用 mise Rust 1.99.1 构建实验版 `ccr.ccs.tencentyun.com/afan-public/w7panel-wafrust:<版本>`，`make push-rust-image` 推送；先按 `wasm-rust/README.md` 安装 Rust WASM target。`make build-helm` 生成默认停用的 WasmPlugin Chart。新资源默认 PL1、On，旧策略不迁移。升级已有 Helm release 前，先核对 Chart 中包含的全部资源。
 - 发布顺序：先构建并推送 Wasm，备份原 WasmPlugin YAML，保持 `defaultConfigDisable: true` 与 `matchRules: []` 切换 OCI 地址和清空旧配置；再发布 WAF 前端，最后发布移除旧 WAF 路由的面板。仅在受控测试窗口启用规则，资源或请求异常时立即回滚，结束后恢复原配置。
 
-防护开关支持禁用、开启自定义配置、仅观察；域名还可选择跟随全局配置。域名跟随全局时，只执行和显示全局设置；切回自定义配置时，原有域名设置恢复。全局添加的自定义规则默认不执行，由各域名逐条开启。删除全局自定义规则时会清理域名对应的开关状态。
+防护开关支持禁用、开启防护、仅观察；域名额外支持跟随全局。域名跟随全局时，只执行和显示全局设置；切回其他防护模式时，原有域名设置恢复。全局添加的自定义规则默认不执行，由各域名逐条开启。删除全局自定义规则时会清理域名对应的开关状态。
 
 使用 `REQUEST_BODY` 或 POST 表单参数等请求体变量时，在“自定义规则”页打开“读取请求体”。MicroApp 会在自定义规则前写入 `SecRequestBodyAccess On`；域名自定义配置可覆盖全局设置。此开关默认关闭，开启会让网关读取请求体，可能增加内存占用。仅添加 phase 2 `SecRule` 不会自动启用请求体读取。更新前端后，需重新保存对应配置才会改写已下发的 WasmPlugin。
 

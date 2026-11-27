@@ -46,7 +46,7 @@ function domainPolicy(value) {
 function globalConfig(plugin) {
   const config = plugin.spec?.defaultConfig || {}
   const global = policy(config.policy)
-  global.useCRS = true
+  delete global.useCRS
   global.customRules = global.customRules.map(rule => ({ ...rule, enabled: false }))
   if (!global.protectionMode) global.protectionMode = 'disabled'
   return { config, global }
@@ -94,7 +94,7 @@ export async function saveWafConfig(props, input) {
   const rules = spec.matchRules || (spec.matchRules = [])
   if (scope === 'global') {
     const global = policy(input)
-    global.useCRS = true
+    delete global.useCRS
     global.customRules = global.customRules.map(rule => ({ ...rule, enabled: false }))
     Object.assign(config, compile(global), { policy: global })
     delete config.w7Policy

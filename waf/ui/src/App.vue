@@ -3,8 +3,8 @@
     <h2 class="page-title">{{ scope === 'rule' ? `域名 WAF 配置：${domain}` : '全局 WAF 配置' }}</h2>
     <div class="protection-summary">
       <div class="setting-heading"><strong>防护开关</strong><span>选择此配置的防护方式</span></div>
-      <a-select v-if="scope === 'global'" v-model="globalProtectionMode" class="mode-select"><a-option value="disabled">禁用</a-option><a-option value="custom">开启自定义配置</a-option><a-option value="observe">仅观察</a-option></a-select>
-      <a-select v-else :model-value="overrideProtectionMode" class="mode-select" @change="setProtectionMode"><a-option value="inherit">跟随全局配置（{{ modeName(globalProtectionMode) }}）</a-option><a-option value="disabled">禁用</a-option><a-option value="custom">开启自定义配置</a-option><a-option value="observe">仅观察</a-option></a-select>
+      <a-select v-if="scope === 'global'" v-model="globalProtectionMode" class="mode-select"><a-option value="disabled">禁用</a-option><a-option value="custom">开启防护</a-option><a-option value="observe">仅观察</a-option></a-select>
+      <a-select v-else :model-value="overrideProtectionMode" class="mode-select" @change="setProtectionMode"><a-option value="inherit">跟随全局</a-option><a-option value="disabled">禁用</a-option><a-option value="custom">开启防护</a-option><a-option value="observe">仅观察</a-option></a-select>
       <div class="effective-summary">当前状态：<strong>{{ modeName(effectiveMode) }}</strong><span>{{ scope === 'rule' ? '已启用' : '已配置' }}自定义规则：{{ effectiveCustomRuleCount }} 条</span></div>
       <p v-if="effectiveMode === 'disabled'" class="setting-note">当前不执行规则；下面的配置会在开启防护后生效。</p>
       <p v-else-if="effectiveMode === 'observe'" class="setting-note">仅观察命中，不拦截请求。</p>
@@ -136,7 +136,7 @@ export default {
   created() { this.load() },
   watch: { tab(value) { if (value === 'logs') this.loadLogs() } },
   methods: {
-    modeName(mode) { return { disabled: '禁用', custom: '开启自定义配置', observe: '仅观察' }[mode] || '禁用' },
+    modeName(mode) { return { disabled: '禁用', custom: '开启防护', observe: '仅观察' }[mode] || '禁用' },
     setProtectionMode(value) { this.overrideProtectionMode = value },
     setParanoiaLevel(value) {
       this.paranoiaLevel = value
@@ -295,7 +295,7 @@ body { margin: 0; color: #1d2129; font-family: -apple-system, BlinkMacSystemFont
 .setting-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 14px 0; border-bottom: 1px solid #f2f3f5; }
 .setting-heading { display: flex; flex: 1 1 220px; flex-direction: column; gap: 4px; }
 .setting-heading span, .setting-note { color: #4e5969; font-size: 13px; line-height: 1.5; }
-.mode-select { width: min(100%, 220px); margin-top: 10px; }
+.mode-select { width: min(100%, 300px); margin-top: 10px; }
 .strength-select { width: 150px; }
 .effective-summary { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; font-size: 13px; }
 .effective-summary span { color: #4e5969; }
