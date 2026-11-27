@@ -6,7 +6,7 @@
 
 - Wasm 源码和固定版本 CRS 在 `wasm/`；CRS 上游提交 `e03a4f6dabc7a30ebd8c52c97d28a154f590a48f`，原许可证保留于 `wasm/CRS-LICENSE`。Higress 原插件代码许可证见 `wasm/HIGRESS-LICENSE`。
 - `python3 ui/scripts/generate_catalog.py --check` 核对 627 条规则、21 个检测 conf 的清单与中文名称映射；映射缺 ID、缺中文名称、重复 ID 或清单过期时失败。中文名称按 CRS 检测消息逐条整理，原始英文 `message` 保留供逐条核对；界面按 conf 折叠显示检测规则，可逐条开关。
-- 全局策略可设置 CRS 总开关、PL1–PL4、`SecRuleEngine` 的 `On`、`DetectionOnly`、`Off`、请求体检查和自定义规则。域名可覆盖 conf 类别、CRS 总开关、请求体检查，并禁用继承的全局自定义规则。自定义规则 ID 从 1000000 起。
+- 全局策略可设置 CRS 总开关、PL1–PL4、防护模式（关闭、拦截、仅记录）、请求体检查和自定义规则。域名默认逐项跟随全局，可分别覆盖防护模式、CRS、强度、类别、单条规则、请求体检查及全局自定义规则；每项可恢复跟随。关闭防护时仍可编辑配置，重新开启后生效。自定义规则 ID 从 1000000 起。
 - `VERSION=0.1.0-crs4.30.0-verified make build-image` 构建 `ccr.ccs.tencentyun.com/afan-public/w7panel-waf:<版本>`；`make push-image` 推送。构建固定使用 Higress Go 1.24.4、Coraza 3.3.3、`no_fs_access` 标签和 `https://goproxy.cn,direct` 模块镜像。`make build-rust-image` 使用 mise Rust 1.99.1 构建实验版 `ccr.ccs.tencentyun.com/afan-public/w7panel-wafrust:<版本>`，`make push-rust-image` 推送；先按 `wasm-rust/README.md` 安装 Rust WASM target。`make build-helm` 生成默认停用的 WasmPlugin Chart。新资源默认 PL1、On，旧策略不迁移。升级已有 Helm release 前，先核对 Chart 中包含的全部资源。
 - 发布顺序：先构建并推送 Wasm，备份原 WasmPlugin YAML，保持 `defaultConfigDisable: true` 与 `matchRules: []` 切换 OCI 地址和清空旧配置；再发布 WAF 前端，最后发布移除旧 WAF 路由的面板。仅在受控测试窗口启用规则，资源或请求异常时立即回滚，结束后恢复原配置。
 

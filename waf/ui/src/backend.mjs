@@ -26,6 +26,22 @@ async function ingress(props) {
 }
 
 const policy = value => ({ categories: {}, customRules: [], ...value })
+function domainPolicy(global, value) {
+  const overrides = policy(value)
+  overrides.protectionMode ||= 'inherit'
+  if (overrides.policyVersion === 2) return overrides
+  const inherit = overrides.protectionMode === 'inherit'
+  return {
+    ...overrides,
+    policyVersion: 2,
+    useCRS: inherit ? null : overrides.useCRS ?? null,
+    requestBodyAccess: inherit ? null : overrides.requestBodyAccess ?? null,
+    paranoiaLevel: inherit ? null : overrides.paranoiaLevel ?? null,
+    categories: inherit ? {} : overrides.categories,
+    ruleStates: inherit ? {} : overrides.ruleStates || {},
+    customRuleStates: inherit ? {} : Object.fromEntries((global.customRules || []).map(rule => [rule.id, (overrides.enabledGlobalIds || []).includes(rule.id)])),
+  }
+}
 function globalConfig(plugin) {
   const config = plugin.spec?.defaultConfig || {}
   const global = policy(config.w7Policy)
@@ -50,14 +66,19 @@ export function compile(global, overrides) {
     if (overrides.customRules?.length) throw new Error('自定义规则只能在全局添加')
     const ids = new Set((global.customRules || []).map(rule => rule.id))
     for (const id of overrides.enabledGlobalIds || []) if (!ids.has(id)) throw new Error(`未知全局自定义规则 ID：${id}`)
+    for (const [id, enabled] of Object.entries(overrides.customRuleStates || {})) {
+      if (!ids.has(Number(id)) || typeof enabled !== 'boolean') throw new Error(`无效的自定义规则覆盖：${id}`)
+    }
   }
-  const inherit = overrides && (overrides.protectionMode || 'inherit') === 'inherit'
-  const selected = !overrides || inherit ? global : overrides
-  const categories = { ...(inherit || !overrides ? global.categories : { ...global.categories, ...overrides.categories }) }
-  const ruleStates = { ...(inherit || !overrides ? global.ruleStates : { ...global.ruleStates, ...overrides.ruleStates }) }
-  const ids = new Set(overrides && !inherit ? overrides.enabledGlobalIds || [] : (global.customRules || []).filter(rule => rule.enabled === true).map(rule => rule.id))
-  const customRules = (global.customRules || []).filter(rule => ids.has(rule.id)).map(rule => ({ id: rule.id, rule: rule.rule.trim(), enabled: true }))
-  return { useCRS: selected.useCRS ?? global.useCRS ?? true, categories, ruleStates, customRules, requestBodyAccess: selected.requestBodyAccess ?? global.requestBodyAccess ?? false, engineMode: selected.protectionMode === 'observe' ? 'DetectionOnly' : 'On', paranoiaLevel: selected.paranoiaLevel || global.paranoiaLevel || 1 }
+  const legacyInherit = overrides && overrides.policyVersion !== 2 && (!overrides.protectionMode || overrides.protectionMode === 'inherit')
+  const own = overrides && !legacyInherit ? overrides : null
+  const mode = overrides?.protectionMode && overrides.protectionMode !== 'inherit' ? overrides.protectionMode : global.protectionMode
+  const categories = { ...global.categories, ...own?.categories }
+  const ruleStates = { ...global.ruleStates, ...own?.ruleStates }
+  const customRules = (global.customRules || []).filter(rule => own?.policyVersion === 2
+    ? own.customRuleStates?.[rule.id] ?? rule.enabled === true
+    : own ? (own.enabledGlobalIds || []).includes(rule.id) : rule.enabled === true).map(rule => ({ id: rule.id, rule: rule.rule.trim(), enabled: true }))
+  return { useCRS: own?.useCRS ?? global.useCRS ?? true, categories, ruleStates, customRules, requestBodyAccess: own?.requestBodyAccess ?? global.requestBodyAccess ?? false, engineMode: mode === 'observe' ? 'DetectionOnly' : 'On', paranoiaLevel: own?.paranoiaLevel ?? global.paranoiaLevel ?? 1 }
 }
 
 export async function loadWafConfig(props) {
@@ -67,9 +88,7 @@ export async function loadWafConfig(props) {
   const { global } = globalConfig(plugin)
   const rules = plugin.spec?.matchRules || []
   const config = rules[findRule(rules, target)]?.config || {}
-  const overrides = policy(config.w7Overrides)
-  if (!overrides.protectionMode) overrides.protectionMode = 'inherit'
-  if (!overrides.enabledGlobalIds) overrides.enabledGlobalIds = []
+  const overrides = domainPolicy(global, config.w7Overrides)
   return { global, overrides, catalog: uiCatalog }
 }
 
@@ -92,14 +111,19 @@ export async function saveWafConfig(props, input) {
       if (!rule.config?.w7Overrides) continue
       const overrides = policy(rule.config.w7Overrides)
       const known = new Set((global.customRules || []).map(item => item.id))
-      overrides.enabledGlobalIds = (overrides.enabledGlobalIds || []).filter(id => known.has(id))
+      if (overrides.policyVersion === 2) {
+        overrides.customRuleStates = Object.fromEntries(Object.entries(overrides.customRuleStates || {}).filter(([id]) => known.has(Number(id))))
+        delete overrides.enabledGlobalIds
+      } else overrides.enabledGlobalIds = (overrides.enabledGlobalIds || []).filter(id => known.has(id))
       if (!overrides.protectionMode) overrides.protectionMode = 'inherit'
       Object.assign(rule.config, compile(global, overrides), { w7Overrides: overrides })
       for (const key of ['ruleFiles', 'secRules']) delete rule.config[key]
       rule.configDisable = (overrides.protectionMode === 'inherit' ? global.protectionMode : overrides.protectionMode) === 'disabled'
     }
   } else {
-    const overrides = policy(input)
+    const overrides = input.customRuleStates ? policy(input) : domainPolicy(savedGlobal, input)
+    overrides.policyVersion = 2
+    delete overrides.enabledGlobalIds
     if (!overrides.protectionMode) overrides.protectionMode = 'inherit'
     const compiled = compile(savedGlobal, overrides)
     let index = findRule(rules, target)
