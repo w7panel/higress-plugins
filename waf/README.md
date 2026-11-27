@@ -51,6 +51,12 @@ Wasm 曾在 `main.go` 注册 `coraza-wasilibs` 的 RX、PM、SQLi、XSS 算子�
 
 218 上的 Rust 攻击样本逐条筛查证实 238 条请求规则由目标规则拦截，另有 28 条返回 200、5 条返回与目标规则无关的 400；详细覆盖范围和原始 CSV 见 [Rust 攻击样本报告](wasm-rust/benchmarks/README.md#218-rust-攻击特征请求2026-11-27)。2026-11-27 已将 218 的现有 `w7panel-pluginwaf` WasmPlugin 镜像切为 Rust `rust-0.1.3-crs4.30.0-131b885`，保留原配置；正常、攻击和超限请求探针通过。独立测试插件 `w7panel-wafrust` 仍在 218。
 
+### Registry 鉴权参数误报（2026-11-27）
+
+218 上请求 `GET https://zpk.fan.b2.sz.w7.com/zpk/v2/registry/auth?scope=repository%3Aapp%2Fr_tet1%3Apull&service=docker-registry` 返回 403；将 `service` 改为 `test` 返回 200。Gateway 访问日志的 `response_code_details` 为 `via_wasm::higress-system.w7panel-pluginwaf`，且无上游地址，确认由 WAF 拦截。用 218 当前配置及同版本 Rust/CRS 4.30.0 离线重放后，PL1 规则 **932260**（`REQUEST-932-APPLICATION-ATTACK-RCE.conf`，直接执行 Unix 命令检测）在 `ARGS:service=docker-registry` 中匹配 `docker-`，随后 **949110** 因入站异常分达到阈值返回 403。这是正常业务参数的误报；去掉 `service` 或改为 `test` 时未命中 932260。
+
+如需放行，应仅对该鉴权路由的 `ARGS:service` 排除 932260，保留此规则对其他参数和路由的检测。当前仅记录原因，未改动线上 WAF 配置。Rust 插件目前不在 Gateway 访问日志中输出命中规则 ID，定位时需结合请求差异与相同配置的 Coraza 重放。
+
 参考 `w7panel-kilo` 的独立页面方式，在本机启动开发服务器，直接打开 WAF 页面。开发服务器代理 `/k8s-proxy/*` 和日志使用的 `/panel-api/v1/*` 到 W7Panel；首次请求时会提示输入面板令牌，令牌仅保存在当前页面内存中，刷新后需重新输入。当前用户需有读取和更新 WAF WasmPlugin 的 Kubernetes 权限。
 
 ```sh
